@@ -1,0 +1,78 @@
+---
+title: "黑灰游戏 · 改"
+date: 2022-3-1
+tags:
+  - Math
+  - ACM课程
+---
+
+Puzzle
+
+<!-- more -->
+
+# N. 黑灰游戏 · 改
+
+**题意**：$n$堆石子，每堆$a_i$个，玩家$A$、$B$轮流指定对方拿第$i$堆的石子，对方要拿至少1个石子，取走最后一个石子的胜利，判断谁胜。
+
+***
+
+1. 首先考虑最简单的情况，即所有的石子堆都只有1个石子，那么显然堆数为奇数时，第一个指定让对方拿石子的玩家必败，偶数时必胜。
+
+2. 如果存在石子数不为1的石子堆，情况有些许变化。可以简单的情况模拟一下：
+
+   设石子堆分别为1、1、2：
+
+   A如果先让B拿石子数为1的石子堆，剩下的石子堆为1、2，此时B只要让A拿剩下那个石子数为1的石子堆，B就可以顺理成章的一口气拿完最后一堆；
+
+   A如果先让B拿石子数位2的石子堆，B直接把石子拿完，剩下的石子堆为1、1，此时根据上面的结论，B已经胜利了。
+
+   出现这种情况的原因是，玩家在拿一个石子数大于1的石子堆时，可以控制拿完或者拿的只剩1个，以此控制场上石子数为1的石子堆的奇偶性，多模拟一些情况就会发现，对于场上存在石子数大于1的石子堆的情况，石子数为1的石子堆数量为偶数时后指定的那位玩家必胜，反之必败。这种情况与上面的1.情况恰好相反。
+
+***
+
+```
+#include <bits/stdc++.h>
+template<typename T>
+inline void read(T& x) { x = 0; char c = getchar(); while (!isdigit(c))c = getchar(); while (isdigit(c)) { x = x * 10 + c - '0'; c = getchar(); } }
+#define si(a) read(a)
+#define sii(a,b) read(a),read(b)
+#define siii(a,b,c) read(a),read(b),read(c)
+#define fl double
+#define ll long long int
+#define ull unsigned long long int
+//#define T ll
+using namespace std;
+const ll MOD = 998244353;
+const int N = 3e5 + 10;//                       这个容易改的啊！！！！！！！
+//int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+ll gcd(ll a, ll b) { return a == 0 ? b : gcd(b % a, a); }
+int n, m;
+int k;
+void solve() {//         快读不能读负数啊！！！ 交互不能快读啊！！！╰(艹皿艹)
+	si(n);
+	int cnt = 0;
+	for (int i = 1; i <= n; i++) {
+		int tmp; si(tmp);
+		if (tmp == 1)cnt++;
+	}
+	if (cnt == n) {
+		if (cnt % 2)puts("Win");
+		else puts("Lose");
+		return;
+	}
+	if (cnt % 2)puts("Lose");
+	else puts("Win");
+}
+int main() {
+	int t;
+	t = 1;
+	si(t);
+	while (t--)
+		solve();
+	return 0;
+}
+/*
+
+*/
+```
+

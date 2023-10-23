@@ -1,0 +1,124 @@
+---
+title: "矿物储量不足"
+date: 2022-3-1
+tags:
+  - DP
+  - ACM课程
+---
+
+树上DP
+
+<!-- more -->
+
+# H. 矿物储量不足 
+
+**题意**：一颗有n个节点的树，每个节点的权值为1或-1，求树上以1~n节点为根的连通块的最大权值和
+
+***
+
+分析：其实该题是要求包含i节点的连通块的最大权值和，先以1为根节点，如果我们知道了i**子树里**包含i的连通块的最大权值和，那么包含i的连通块的最大权值和就可以通过其父亲和i自己转移得到。
+
+假设包含i的连通块的最大权值和为ans[i]：
+
+* 先跑一遍dfs确定各a[i]:对于i节点的每个儿子j，$ans[i]+=max\{0,ans[j]\}$，最后ans[i]加上自己的权值。此时每个ans[i]是i子树里包含i的连通块的最大权值和；
+
+  ~~~
+  for (auto v : e[u]) 
+  		if(!vis[v])
+  			ans[u] += max(0, dfs(v));
+  ans[u] += value[u];
+  ~~~
+
+* 再跑一遍dfs，对于i节点的儿子每个儿子j：
+
+  1. 若$ans[j]<0$，说明j子树里包含j的连通块最大权值和是负的，这时候就可以看它父亲ans[i]是否是正的，如果是正的，说明父亲i没取到j及其一下的部分还是正的，那ans[j]就直接加ans[i]，否则ans[j]不变；
+
+  2. 若$ans[j]>0$，显然ans[j]就取$max\{ans[j],ans[i]\}$;
+
+  ~~~
+  for (auto v : e[u]) {
+  		if (!vis2[v]) {
+  			if (an[v] < 0)
+  				an[v] += max(0,an[u]);
+  			else
+  				an[v] = max(an[v],an[u]);
+  			dfs2(v);
+  		}
+  	}
+  ~~~
+
+这样两波dfs后，每个节点的答案就出来了。
+
+***
+
+```
+#include <bits/stdc++.h>
+template<typename T>
+inline void read(T& x) { x = 0; char c = getchar(); while (!isdigit(c))c = getchar(); while (isdigit(c)) { x = x * 10 + c - '0'; c = getchar(); } }
+#define si(a) read(a)
+#define sii(a,b) read(a),read(b)
+#define siii(a,b,c) read(a),read(b),read(c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+int jd(int a) { return a < 0 ? (a * -1) : a; }
+const ll MOD = 998244353;
+const int N = 2e5 + 10;
+int n, m;
+vector <int> e[N];
+int c[N], an[N];
+int vis[N], vis2[N];
+int dfs(int u) {
+	if (vis[u])
+		return 0;
+	vis[u] = 1;
+	an[u] = c[u];
+	int tot = 0;
+	for (auto v : e[u]) 
+		if(!vis[v])
+			tot += max(0, dfs(v));//选或不选
+	an[u] += tot;
+	return an[u];
+}
+void dfs2(int u) {
+	if (vis2[u])
+		return;
+	vis2[u] = 1;
+	for (auto v : e[u]) {
+		if (!vis2[v]) {
+			if (an[v] < 0)
+				an[v] += max(0,an[u]);
+			else
+				an[v] = max(an[v],an[u]);
+			dfs2(v);
+		}
+	}
+}
+void solve() {
+	si(n);
+	for (int i = 1; i <= n; i++) {
+		int tem; si(tem);
+		c[i] = tem ? 1 : -1;
+	}
+	for (int i = 1; i < n; i++) {
+		int a, b; sii(a, b);
+		e[a].push_back(b);
+		e[b].push_back(a);
+	}
+	dfs(1);
+	dfs2(1);
+	for (int i = 1; i <= n; i++)printf("%d ", an[i]);
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}/*10 2
+1 2 3 3 3 4 5 3 4 5*/
+
+```
+

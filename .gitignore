@@ -18,5 +18,5 @@ package-lock.json
 .idea
 .vscode
 
-# Misc
-assets/js/dist
+# # Misc
+# assets/js/dist

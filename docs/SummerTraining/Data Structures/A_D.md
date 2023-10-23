@@ -1,0 +1,128 @@
+---
+title: "猫为什么讨厌狗是有理由的"
+date: 2022-3-1
+tags:
+  - Data Structures
+  - ACM课程
+---
+
+前缀和，ST表
+
+<!-- more -->
+
+# A. 猫为什么讨厌狗是有理由的 
+
+**题意**:有$n$个罐子，每个罐子有坚固度$a_i$，同时有$m$个钥匙，每个钥匙型号为$b_i$，可以打开坚固度恰好为$b_i$的罐子。我们可以不断攻击罐子，每次攻击让罐子的坚固度$x$变为$x/d$(向下取整)。$Q$次询问，每次询问$L$到$R$区间，*在满足用钥匙开罐子最多的情况下，使用钥匙的最少数*。
+
+***
+
+对于一个钥匙$b_i$，如果另一个钥匙$b_i$能通过除以一定次数的$d$变成$b_i$，则说明$b_i$能开的$b_i$都能开（直接锤罐子），也就是说$b_i$完全没有存在的必要性，直接丢了就行。此时预留下来的钥匙都是独一无二的，无法互相代替，即此时每个罐子至多对应一个钥匙。为每个罐子（二分查找）匹配合适的钥匙（或找不到），那么询问就可以转化为询问$L$到$R$区间的罐子对应了多少互不相同的钥匙。
+
+解决区间内互不相同的数的数量，可以采用前缀和或st表来实现：
+
+***
+
+  **前缀和**：
+
+* 对于每一个型号的钥匙$b_i$，求得它在1到n区间出现次数的前缀和$times_{i,j}$
+
+  ```
+  for (auto it : key) {
+  		cut++;
+  		for (int i = 1; i <= n; i++) {
+  			if (a[i] == it)//a[i]是罐子
+  				times[cut][i]++;
+  			times[cut][i] += times[cut][i - 1];
+  		}
+  	}
+  ```
+
+* 那么对于$L$到$R$区间$b_i$的出现次数即为$times_{i,R} -times_{i,l-1}$，只要出现次数不为$0$，$an$就加$1$
+
+**ST表**：
+
+* 考虑到钥匙数量不超过**60**个，可以将每个钥匙对应二进制上的一位，则询问就是问$L$到$R$上的钥匙按位或得到的二进制数有多少个**1** 
+
+  ***
+
+```
+#include <bits/stdc++.h>
+template<typename T>
+inline void read(T& x) { x = 0; char c = getchar(); while (!isdigit(c))c = getchar(); while (isdigit(c)) { x = x * 10 + c - '0'; c = getchar(); } }
+#define si(a) read(a)
+#define sii(a,b) read(a),read(b)
+#define siii(a,b,c) read(a),read(b),read(c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+int jd(int a) { return a < 0 ? (a * -1) : a; }
+const int MOD = 1e9 + 7;
+const int N = 5e5 + 10;
+int n, m, Q;
+ull d;
+int cut;//key数量
+ull a[N], b[N];
+ull key_min;
+set<ull> key;
+int times[64][N];
+int qur(int l, int r) {
+	int an = 0;
+	for (int i = 1; i <= cut; i++)
+		if (times[i][r] - times[i][l - 1])
+			an++;
+	return an;
+}
+void keydeal() {//去除重复钥匙
+	for (int i = 1; i <= m; i++)
+		for (int j = i + 1; j <= m; j++)
+			if (b[j] != -1 && b[j] != b[i]) {
+				ull tem = b[j];
+				while ((tem /= d) >= b[i])
+					if (tem == b[i]) {
+						b[j] = -1; 
+						break;
+					}
+			}
+	for (int i = 1; i <= m; i++)
+		if (b[i] != -1) key.emplace(b[i]);
+}
+void solve() {
+	sii(n, m); sii(d, Q);
+	for (int i = 1; i <= n; i++)si(a[i]);
+	for (int i = 1; i <= m; i++)si(b[i]);
+	sort(b + 1, b + m + 1); key_min = b[1];
+	keydeal();
+	auto it = key.begin();
+	for (int i = 1; i <= n; i++) {
+		while (a[i] >= key_min) 
+			if ((it = key.find(a[i])) != key.end()) 
+				break;
+			else
+				a[i] /= d;
+		if (a[i] < key_min)
+			a[i] = -1;
+	}
+	for (auto it : key) {
+		cut++;
+		for (int i = 1; i <= n; i++) {
+			if (a[i] == it)
+				times[cut][i]++;
+			times[cut][i] += times[cut][i - 1];
+		}
+	}
+	while (Q--) {
+		int l, r; sii(l, r);
+		printf("%d\n", qur(l, r));
+	}
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+```
+

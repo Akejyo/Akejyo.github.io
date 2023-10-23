@@ -1,0 +1,67 @@
+---
+title: "啥b二次元3"
+date: 2022-3-1
+tags:
+  - DP
+  - ACM课程
+---
+
+摇摆数组
+
+<!-- more -->
+
+# M. 啥b二次元 **3**
+
+**题意**：1到n的排列，求使每个位置都比其相邻位置都大或都小的排序方案数（摇摆/波浪)
+
+***
+
+分析：设$dp[i][j]$为长度为i且第一位是峰值的方案数。我们可以发现一个规律，对于一个第一位为峰值的摇摆数组，用高度做比喻，这个数离地面越高，那它离顶就越近，所以将每个数$x$都换成$n-x+1$($n$是该数组长度)，这个数组就会转换成一个第一位为波谷的摇摆数组。这时候就可以考虑dp转移了，本来$dp[i][j]$为所有长度为$i-1$、第一个数为$1$到$j-1$且为波谷的方案数的总和，经过上面的转化，就可以算得下面的式子：
+
+​															$dp[i][j] = dp[i][j - 1] + dp[i - 1][i - j]$
+
+~~~
+for (int i = 1; i <= n; i++)dp[1][i] = 1;//初始化
+for (int i = 2; i <= n; i++)
+	for (int j = 1; j <= n; j++)
+		dp[i][j] = (dp[i][j - 1] + dp[i - 1][i - j]) % MOD;
+~~~
+
+***
+
+```
+#include <bits/stdc++.h>
+template<typename T>
+inline void read(T& x) { x = 0; char c = getchar(); while (!isdigit(c))c = getchar(); while (isdigit(c)) { x = x * 10 + c - '0'; c = getchar(); } }
+#define si(a) read(a)
+#define sii(a,b) read(a),read(b)
+#define siii(a,b,c) read(a),read(b),read(c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+int jd(int a) { return a < 0 ? (a * -1) : a; }
+//const ll MOD = 924844033;
+//const int N = 1e5 + 10;
+int n, m;
+ll MOD;
+ll dp[5000][5000];
+void solve(){
+	sii(n, MOD);
+	for (int i = 1; i <= n; i++)dp[1][i] = 1;
+	for (int i = 2; i <= n; i++)
+		for (int j = 1; j <= n; j++)
+			dp[i][j] = (dp[i][j - 1] + dp[i - 1][i - j]) % MOD;
+	printf("%lld", (2 * dp[n][n])%MOD);
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+
+```
+

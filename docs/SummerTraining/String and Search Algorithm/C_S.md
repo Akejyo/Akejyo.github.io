@@ -1,0 +1,96 @@
+---
+title: "归并排序"
+date: 2022-3-1
+tags:
+  - Search Algorithm
+  - ACM课程
+---
+
+<!-- more -->
+
+#  C.归并排序 
+
+**题意**：对两个无序且长度任意的序列a和b进行归并，同时要求结果的字典序最小
+
+**分析**：其实就是每次取剩余序列中字典序更小的那一侧的点。
+
+* 当$a_i\neq b_j$时，取小的那个；
+* 当$a_i=b_j$时，这两个点分别向后找，把与这两个点值一样的都去掉（一直找到值不一样的两个点），然后输出较小的那个即可。
+
+然而如果直接这样去一个一个找的话，在遇到类似$aaaa...b$这样的序列时，每次都要扫一遍序列，复杂度很高，需要优化。
+
+**优化**：对于连续相同的一系列数，我们让它们都指向这一系列数的末尾，这样每次向后查询与当前数字不同的数字时可以一步到位，直接跳到该系列数的最后一个。
+
+***
+
+```
+#include <bits/stdc++.h>
+template<typename T>
+inline void read(T& x) { x = 0; char c = getchar(); while (!isdigit(c))c = getchar(); while (isdigit(c)) { x = x * 10 + c - '0'; c = getchar(); } }
+#define si(a) read(a)
+#define sii(a,b) read(a),read(b)
+#define siii(a,b,c) read(a),read(b),read(c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+//const ll MOD = 924844033;
+const int N = 2e5 + 10;
+int n, m;
+int a[N], b[N], c[2 * N];
+int a_dex[N], b_dex[N];
+int cnt, ai = 1, bi = 1, aai = 1, bbi = 1;
+void solve() {
+	memset(a, 63, sizeof(a)) ,memset(b, 63, sizeof(b));
+	memset(a_dex, 63, sizeof(a_dex)), memset(b_dex, 63, sizeof(b_dex));
+	si(n); for (int i = 1; i <= n; i++)si(a[i]);
+	si(m); for (int i = 1; i <= m; i++)si(b[i]);
+	for (int i = n; i >= 1; i--) a_dex[i] = a[i] == a[i + 1] ? a_dex[i + 1] : i;
+	for (int i = m; i >= 1; i--) b_dex[i] = b[i] == b[i + 1] ? b_dex[i + 1] : i;
+	while (cnt < n + m) {
+		if (a[ai] > b[bi])
+			c[++cnt] = b[bi++];
+		else if (a[ai] < b[bi])
+			c[++cnt] = a[ai++];
+		else {
+				aai = ai, bbi = bi;
+				if (ai == n)
+					c[++cnt] = b[bi++];
+				else if (bi == m)
+					c[++cnt] = a[ai++];
+				else {
+					while (1) {
+						aai = a_dex[aai] + 1, bbi = b_dex[bbi] + 1;
+						if ((aai - ai) != (bbi - bi)) {
+							c[++cnt] = (aai - ai) < (bbi - bi) ? a[ai++] : b[bi++];
+							break;
+						}
+						else if (a[aai] != b[bbi]) {
+							c[++cnt] = a[aai] < b[bbi] ? a[ai++] : b[bi++];
+							break;
+						}
+						if (aai > n) { c[++cnt] = b[bi++]; break;}
+						if (bbi > m) {c[++cnt] = a[ai++]; break;}
+					}
+				}
+			
+		}
+	}
+	for (int i = 1; i <= n + m; i++)printf("%d ", c[i]);
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+/*
+4
+1 2 2 3
+4
+1 2 2 1
+*/
+```
+

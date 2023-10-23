@@ -1,0 +1,153 @@
+---
+title: "又开会了"
+date: 2022-3-1
+tags:
+  - Graph
+  - ACM课程
+---
+
+Tarjan
+
+<!-- more -->
+
+# I.又开会了
+
+**题意**: 给定**m**个约束条件，每个约束条件有**u**,**x**,**v**,**y**，表示$a_u=x$或$a_v=y$至少有一个成立（其中x,y为**0**或**1**）。问是否存在一组$a$同时满足所有约束条件。
+
+***
+
+$a_u=x$或$a_v=y$至少有一个成立，即$a_u=x$和$a_v=y$的**非**是矛盾的，直接把约束条件改成$a_u=x$和$a_v=y$矛盾，把$a_u=x$的非与$a_v=y$建边，$a_v=y$的非与$a_u=x$建边，然后跑$Tarjan$将各各点分成强连通分量，在每一个强连通分量里查询$a_u=0$和$a_u=1$是否同时出现，没有同时出现就是合理的。
+
+虽然但是，再看这个建图感觉还是有点不妥，因为似乎没考虑同时为非的情况，~~但题ac了就不管了。~~
+
+### Tarjan
+
+***
+
+算法流程：
+
+先对图跑$dfs$，对每个节点$u$维护两个变量：
+
+1. $dfn_u$：$u$在$dfs$中被第一次搜索的次序
+2. $low_u$：$u$在不经过其父节点的情况下能到达的$dfn$最小值
+
+对于一个节点$u$，先把$u$压到栈里存起来，在处理他的邻居$v$时：
+
+1. 若$v$没有被访问过，先继续跑$dfs$，得到$low[v]$，因为$v$能回溯到的点$u$一定也行，所以$low[u]=min(low[u],low[v])$
+2. 若$v$已被访问过且$v$还没有确定其是属于哪个强连通分量，则$low[u]=min(low[u],dfn[v])$
+
+若$dfn[u]=low[u]$，则栈里$u$及其上面的点合成一个强连通分量。
+
+最后，对于一个强连通分量，将其中的点存到$set$里，对每个点查询$set$里是否有它的非，用$set$是因为$set$高贵的二分查找比较方便。
+
+***
+
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+#include <set>
+#include <map>
+#include <string>
+#include <stack>
+#include <queue>
+#include <malloc.h>
+#include <string.h>
+#include <math.h>
+#include <algorithm>
+#define si(a) scanf("%d",&a)
+#define sii(a,b) scanf("%d%d",&a,&b)
+#define siii(a,b,c) scanf("%d%d%d",&a,&b,&c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+int mmm(int a, int b) { if (a < b) return a; else return b; }
+int bbb(int a, int b) { if (a > b) return a; else return b; }
+int jd(int a) { return a < 0 ? (a * -1) : a; }
+const int MAX = 100010;
+struct edge {
+	int v;
+	int val;
+};
+vector<edge> e[2 * MAX];
+vector<int> S[2 * MAX];
+set<int> S_name;//scc种类
+int dfn[2 * MAX], low[2 * MAX];
+int path[100000000];
+int jg[MAX];
+bool ins[2 * MAX];
+int scc[2 * MAX];
+int cut = 1;//cut是遍历次序
+int sut = 0;//scc数量
+int tp;
+void tarjan(int u) {
+	dfn[u] = cut; 
+	low[u] = cut++;
+	path[++tp] = u;
+	ins[u] = true;
+	for (auto it : e[u]) {
+		int v = it.v;
+		if (!dfn[v]) {//正常子节点（树边）
+			tarjan(v);
+			low[u] = mmm(low[u], low[v]);
+		}
+		else if(ins[v])
+			low[u] = mmm(low[u], dfn[v]);//回到当前祖先去了
+	}
+	if (dfn[u] == low[u]) {
+		while (path[tp] != u) {
+			scc[path[tp]] = u;
+			ins[path[tp--]] = false;
+		}
+		scc[path[tp]] = u;
+		ins[path[tp--]] = false;
+	}
+}
+void solve() {
+	int i, j;
+	int n, m, s;
+	sii(n, m);
+	for (i = 1; i <= m; i++) {
+		int u, x, v, y;
+		sii(u, x); sii(v, y);
+		if (u != v) {//2i和2i+1分别是0和1 //至少有一个成立,即两者的“非”矛盾，就把条件当成是两者矛盾了
+			if(y == 1)
+			    e[2 * u + x].push_back({ 2 * v,1 });
+			else
+				e[2 * u + x].push_back({ 2 * v + 1,1 });
+			if(x == 1)
+			    e[2 * v + y].push_back({ 2 * u,1 });
+			else
+				e[2 * v + y].push_back({ 2 * u + 1,1 });
+		}
+	}
+	int len = 2 * n + 1;
+	for (i = 2; i <= len; i++)//要保证都循环了
+		if (!dfn[i]) tarjan(i);
+	for (i = 2; i <= len; i++) {
+		S[scc[i]].push_back(i);
+		S_name.insert(scc[i]);
+	}
+	for (auto it : S_name) {
+		memset(jg, 0, sizeof(int)*(n+1));
+		for (auto tp : S[it])
+			if (jg[tp/2]) {
+				printf("NO");
+				return;
+			}
+			else
+				jg[tp/2]++;
+	}
+	printf("YES");
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+```
+

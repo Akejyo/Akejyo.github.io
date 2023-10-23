@@ -1,0 +1,150 @@
+---
+title: "纯白色的少年郎，如今只身在何方"
+date: 2022-3-1
+tags:
+  - Graph
+  - ACM课程
+---
+
+Dijkstra
+
+<!-- more -->
+
+# O. 纯白色的少年郎，如今只身在何方
+
+**题意**：给定一个有向图，求每个点到起点的最短路径。
+
+因为$Dijkstra$在求最短路的过程中会不断更新每个节点到起点的最短距离，处理该问题相当合适。
+
+### **Dijkstra**
+
+***
+
+普通的$Dijstra$会$TLE(O(n^2))$，使用优先队列优化$(O(m log m))$。
+
+**算法流程**：
+
+* 先初始化每个点到原点的最短距离$dis[i]$设为**INF**，将起点$dis[1]$设为**0**。
+
+* 将起点推入优先队列**r**中（按照$dis$从小到大排序）。只要**r**不空，执行下面操作：
+  1. 弹出顶层**u**
+  2. 对**u**的每个邻居**v**，更新$dis$，$dis[v]=min(dis[v],dis[u]+w[u,v])$
+  3. 若进行了有效的更新，把**v**压入**r**中
+
+* 最后检查每个$dis[i]$，若为**INF**则说明该点没跑过，返回$-1$；否则返回$dis[i]$
+
+  ```
+  void dijkstra(int s) {
+  	memset(d, 63, sizeof(d));//初始化成一个很大的值
+  	d[s] = 0;               //初始化起点dis[s]=0
+  	r.push({ s,0 });       //先推一个进队列
+  	while (!r.empty()) {
+  		int u = r.top().dex;
+  		r.pop();
+  		if (!vis[u]) {
+  			vis[u] = true;
+  			for (auto it : e[u]) {
+  				int v = it.v;
+  				ll dis = it.dis;
+  				if (d[v] > d[u] + dis) {
+  					d[v] = d[u] + dis;    //更新
+  					r.push({v , d[v]});  //有效更新，把点推入队列里
+  				}
+  			}
+  		}
+  	}
+  }
+  ```
+
+  ***
+  
+  ```
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <vector>
+  #include <set>
+  #include <map>
+  #include <string>
+  #include <stack>
+  #include <queue>
+  #include <malloc.h>
+  #include <string.h>
+  #include <math.h>
+  #include <algorithm>
+  #define si(a) scanf("%d",&a)
+  #define sii(a,b) scanf("%d%d",&a,&b)
+  #define siii(a,b,c) scanf("%d%d%d",&a,&b,&c)
+  #define fl float
+  #define ll long long int
+  #define ull unsigned long long int
+  using namespace std;
+  int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+  int mmm(int a, int b) { if (a < b) return a; else return b; }
+  int bbb(int a, int b) { if (a > b) return a; else return b; }
+  int jd(int a) { return a < 0 ? (a * -1) : a; }
+  struct road {
+  	int dex;
+  	ll dis;
+  	friend bool operator < (road a, road b){ return a.dis > b.dis; }//重载<,按val从小到大
+  };
+  struct edge {
+  	int v;//节点u->v
+  	ll dis;
+  };
+  priority_queue <road > r;//重载了基层
+  ll d[100010];
+  bool vis[100010];
+  vector<edge> e[200010];//就是vector实现邻接矩阵orz
+  edge tem;
+  void dijkstra(int s) {
+  	memset(d, 63, sizeof(d));//初始化成一个很大的值1061109567
+  	d[s] = 0;
+  	r.push({ s,0 });
+  	while (!r.empty()) {
+  		int u = r.top().dex;
+  		r.pop();
+  		if (!vis[u]) {
+  			vis[u] = true;
+  			for (auto it : e[u]) {
+  				int v = it.v;
+  				ll dis = it.dis;
+  				if (d[v] > d[u] + dis) {
+  					d[v] = d[u] + dis;//更新
+  					r.push({v , d[v]});
+  				}
+  			}
+  		}
+  	}
+  }
+  void solve() {
+  	int i, j;
+  	int n,m, s;
+  	siii(n, m, s);
+  	for (i = 0; i < m; i++) {
+  		int a, b;
+  		ll c;
+  		sii(a, b); scanf("%lld", &c);
+  		e[a].push_back({b , c});//直接{}就不需要中间量了
+  	}
+  	dijkstra(s);
+  	for (i = 1; i <= n; i++) {
+  		if (i == s)
+  			printf("%d\n", 0);
+  		else {
+  			if (vis[i])
+  				printf("%lld\n", d[i]);
+  			else
+  				printf("%d\n", -1);
+  		}
+  	}
+  }
+  int main() {
+  	int t;
+  	/*si(t);
+  	while (t--)*/
+  	solve();
+  	return 0;
+  }
+  ```
+  
+  

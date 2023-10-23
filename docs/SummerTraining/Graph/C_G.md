@@ -1,0 +1,127 @@
+---
+title: "魔法少女"
+date: 2022-3-1
+tags:
+  - Graph
+  - ACM课程
+---
+
+矩形图上Dijkstra
+
+<!-- more -->
+
+# C .魔法少女
+
+**题意**: 矩形网格里，只能沿对角线移动，每个格子只有一个对角线是通路（通过的代价是0），另一个对角线通过需要**1**代价。求从左上角移动到右下角最少花费（或不能做到）。
+
+------
+
+很容易就能想到用最短路的方法去解，可以直接建图：以网格图上的点为节点，每个点至多能连4个边（与左上、左下，右上，右下相连），权值为1或0，然后跑一遍$Dijkstra$就行。
+
+**BUT**这种矩形网格图建图属实是没必要，每个点的邻居都是确定的，联想到走迷宫类的题，我们可以用两个数组来操控**魔法少女**的x,y坐标。
+
+```
+int dx[4] = { 1,1,-1,-1 };
+int dy[4] = { 1,-1,-1,1 };
+```
+
+这样遍历$dx,dy$,**魔法少女**的下一个坐标就为$x+dx[i],y+d[y]$。同时再用两个数组来表示一个点所连的格子的坐标。
+
+```
+int dor_x[4] = { 0,0,-1,-1 };
+int dor_y[4] = { 0,-1,-1,0 };
+```
+
+$x+dor\_x[i]$和$y-dor\_y[i]$即为四个格子的坐标。![7791A9221CE1A6950161460C82233CB6](C:\Users\张少禹\Desktop\7791A9221CE1A6950161460C82233CB6.png)
+
+其余的就是稍微改改$Dijkstra$的板子就行。
+
+***
+
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+#include <set>
+#include <map>
+#include <string>
+#include <stack>
+#include <queue>
+#include <malloc.h>
+#include <string.h>
+#include <math.h>
+#include <algorithm>
+#define si(a) scanf("%d",&a)
+#define sii(a,b) scanf("%d%d",&a,&b)
+#define siii(a,b,c) scanf("%d%d%d",&a,&b,&c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+int mmm(int a, int b) { if (a < b) return a; else return b; }
+int bbb(int a, int b) { if (a > b) return a; else return b; }
+int jd(int a) { return a < 0 ? (a * -1) : a; }
+int dis[510][510];//到起点距离
+int dx[4] = { 1,1,-1,-1 };
+int dy[4] = { 1,-1,-1,1 };
+int dor_x[4] = { 0,0,-1,-1 };
+int dor_y[4] = { 0,-1,-1,0 };
+bool vis[510][510];
+char door[510][510];
+int cut, n, m;
+struct edge {
+	int x, y, dis;
+	friend bool operator < (edge a, edge b) { return a.dis > b.dis; }
+};
+priority_queue <edge> e;
+void dfs(int n, int m) {//l记录长度
+	int i;
+	while (!e.empty()) {
+		int x = e.top().x, y = e.top().y;
+		e.pop();
+		if (!vis[x][y]) {
+			vis[x][y] = true;
+			for (i = 0; i < 4; i++) {//这里是邻居们 (
+				int tx = x + dx[i], ty = y + dy[i];
+				if (tx >= 0 && tx <= n && ty >= 0 && ty <= m) {
+					if (!vis[tx][ty]) {
+						int len;
+						if ((dx[i] == dy[i] && door[x + dor_x[i]][y + dor_y[i]] == '/') || (dx[i] != dy[i] && door[x + dor_x[i]][y + dor_y[i]] == 92))
+							len = 1;
+						else
+							len = 0;
+						if (dis[x][y] + len < dis[tx][ty]) {
+							dis[tx][ty] = dis[x][y] + len;
+							e.push({ tx,ty,dis[tx][ty] });
+						}
+					}
+				}
+			}
+		}
+	}
+}
+void solve() {
+	sii(n, m);
+	memset(dis, 63, sizeof(dis));
+	dis[n][m] = 0;
+	for (int i = 0; i < n; i++)
+		scanf("%s", door[i]);
+	if (door[n - 1][m - 1] == '/')
+		cut++;
+	e.push({ n,m,0 });
+	dfs(n, m);
+	if (dis[0][0] > 1e9)
+		printf("NO SOLUTION");
+	else
+		printf("%d", dis[0][0]);
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+```
+

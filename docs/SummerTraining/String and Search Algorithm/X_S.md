@@ -1,0 +1,105 @@
+---
+title: "APM"
+date: 2022-3-1
+tags:
+  - String
+  - ACM课程
+---
+
+Manacher
+
+<!-- more -->
+
+# X. APM
+
+**题意**：给定一个字符串，取其一个前缀和一个后缀（都可以为空且不能重合），要求拼接后的字符串为回文串，求这个拼接字符串的最长长度
+
+***
+
+**分析**：对于这个拼接出来的字符串，可以分解成两部分：原字符串长度相等的前后缀+拼接字符串的剩余部分
+
+所以先一一对原字符串匹配前后缀，然后对中间部分跑$Manacher$，取前端或后端遇到边界的回文子串的最大长度，加上之前匹配得到的前后缀长度即为答案。
+
+### Manacher 
+
+首先考虑将回文串分成奇偶长度两种情况，设$d_1[i]$是以$i$为中心的最长回文长度的半径长度且长度为奇数，$d_2[i]$为偶数，先考虑奇数情况：我们记录已找到的子回文串中右边界最大的那个串的左右边界$l$、$r$，那么当我们处理到$d_1[i]$时，有下面三种情况：
+
+1. 若$i>r$，我们暴力寻找该位置的$d_1[i]$，并更新$l$、$r$
+2. 若$i<=r$，在$l$和$r$范围足够大的情况下，会出现下面的情况：
+
+> 图来自OI Wiki
+
+![1654959570269](C:\Users\张少禹\AppData\Roaming\Typora\typora-user-images\1654959570269.png)
+
+​	即以$s_i$为中心的回文子串一定会和以$s_j$为中心的回文子串完全一致，而这个$j$是可以直接计算得到的，此时$d_1[i]=d_1[j]$
+
+3. 在$2$的基础上，如果以$j$为中心的串太大了，超出边界$l$、$r$，可以先取$r$作$d_`[i]$的值，然后从$r$处暴力匹配更新$d_1[i]$
+
+$d_2[i]$的处理同理
+
+最后可以把奇偶情况统一起来：对字符串$s$，比如$abcd$，我们将其插入分隔符#变成$\#a\#b\#c\#d\#$，然后正常跑之前的奇数情况，此时的$d_1[i]$为在s中以对应位置为中心的回文串的长度加一。 
+
+***
+
+```
+#include <bits/stdc++.h>
+template<typename T>
+inline void read(T& x) { x = 0; char c = getchar(); while (!isdigit(c))c = getchar(); while (isdigit(c)) { x = x * 10 + c - '0'; c = getchar(); } }
+#define si(a) read(a)
+#define sii(a,b) read(a),read(b)
+#define siii(a,b,c) read(a),read(b),read(c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+//const ll MOD = 924844033;
+const int N = 2e7 + 10;
+int n, m;
+int ans = 0, l_, r_;
+char s[N];
+char s_[N];
+int d1[N], d2[N];
+void Manacher() {
+	s_[0] = '#';
+	int cnt = 1;
+	for (int i = l_; i <= r_; i++)
+		s_[cnt++] = s[i], s_[cnt++] = '#';
+	for (int i = 0, l = 0, r = -1; i < cnt; i++) {//奇数，j取l+r-i
+		int j = l + r - i;
+		int k = (i > r) ? 1 : min(r - i + 1, d1[j]);
+		while (i - k >= 0 && i + k < cnt && s_[i - k] == s_[i + k]) k++;
+		d1[i] = k--;
+		if (i - k == 0 || i + k == cnt-1)
+			ans = max(ans, d1[i] - 1);//左右端取到底了
+		if (i + k > r)
+			l = i - k, r = i + k;
+	}
+}
+void solve() {
+	scanf("%s", s);
+	int len = strlen(s);
+	l_ = 0, r_ = len - 1;
+	while (l_< r_)
+		if (s[l_] == s[r_])
+			l_++, r_--;
+		else break;
+	if (l_ >= r_)
+		printf("%d", len);
+	else {
+		Manacher();
+		printf("%d", ans+l_*2);
+	}
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+		solve();
+	return 0;
+}
+/*
+
+*/
+```
+

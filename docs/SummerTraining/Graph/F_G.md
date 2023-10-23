@@ -1,0 +1,116 @@
+---
+title: "开会了"
+date: 2022-3-1
+tags:
+  - Graph
+  - ACM课程
+
+---
+
+Bellman-Ford找负环
+
+<!-- more -->
+
+# F. 开会了
+
+**题意**：给定一组约束条件 $a_u-a_v <= w_i$，问是否存在一组$a_i$同时满足所有约束条件。
+
+***
+
+$a_u-a_v <= w_i$可以转化成$a_u<= w_i+a_v$ ，这就和跑最短路里$dist[y] <= dist[x] + z$ 很相似。所以我们只要按照  $a_v --w_i--->a_u$，建图跑最短路，看是否存在负环。如果有负环，$a_i$ 一直减减减就没个头了，也就是满足不了要求。
+
+关于判断图里是否有负环，可以用 **Bellman-Ford** 算法
+
+### **Bellman-Ford** 算法找负环：
+
+算法流程： 对每个边$(u,v)$ ，$dis(v) = min(dis(v),dis(u)+w(u,v))$（dis(i)是i点到原点最短距离），称为松弛操作。我们不断对图上的每一条边进行松弛操作，当一轮遍历没有出现松弛操作时停止算法。显然每遍历一次图会至少增加一个最短路的边数，也就是说，最多遍历图**n**（点的个数）次。如果跑了**n**次以后算法还没结束，则可判断出现了负环。
+
+~~**Bellman**-**Ford**可以用队列优化（SPFA)，但是该题好像不需要~~~
+
+***
+
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+#include <set>
+#include <map>
+#include <string>
+#include <stack>
+#include <queue>
+#include <malloc.h>
+#include <string.h>
+#include <math.h>
+#include <algorithm>
+#define si(a) scanf("%d",&a)
+#define sii(a,b) scanf("%d%d",&a,&b)
+#define siii(a,b,c) scanf("%d%d%d",&a,&b,&c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+int mmm(int a, int b) { if (a < b) return a; else return b; }
+int bbb(int a, int b) { if (a > b) return a; else return b; }
+int jd(int a) { return a < 0 ? (a * -1) : a; }
+int vis[5010];
+struct road {
+	int v;
+	int val;
+};
+vector<road> r[5010];
+int d[5010];
+void dfs(int u) {
+	if (vis[u])
+		return;
+	vis[u] = 1;
+	for (auto it : r[u])
+		dfs(it.v);
+}
+int bellmanford(int n) {
+	int i, flag = 0;//flag用来判断是否发生松弛
+	for (i = 0; i < 5010; i++) d[i] = 1e9;
+	d[0] = 0;
+	for (i = 0; i <= n; i++, flag = 0) {
+		for (int u = 0; u <= n; u++)
+			for (auto it : r[u])
+				if (d[it.v] > d[u] + it.val) {
+					d[it.v] = d[u] + it.val;
+					flag++;
+				}
+		if (!flag)
+			break;
+	}
+	return i;
+}
+void solve() {
+	int i, j;
+	int n ,m, s;
+	sii(n, m);
+	for (i = 0; i < m; i++) {
+		int a, b, c;
+		siii(a, b, c);
+		r[b].push_back({ a , c });//b->a
+	}
+	dfs(1);
+	for (i = 1; i <= n; i++)//先dfs一波看看是否联通
+		if (!vis) {
+			printf("NO");
+			return;
+		}
+	for (i = 0; i <= n; i++)//超级源点
+		r[0].push_back({ i,0 });
+	if (bellmanford(n) == n + 1)//最大是n,n+1就是负环
+		printf("NO");
+	else
+		printf("YES");
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+```
+

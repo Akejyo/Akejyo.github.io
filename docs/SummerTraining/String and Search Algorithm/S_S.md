@@ -1,0 +1,167 @@
+---
+title: "井字棋"
+date: 2022-3-1
+tags:
+  - Search Algorithm
+  - ACM课程
+---
+
+状态压缩，记忆化搜索
+
+<!-- more -->
+
+# S. 井字棋 
+
+**题意**：~~普普通通~~井字棋，规定井字棋终局的得分为相同子连成一条线的个数，有$T$个井字棋的棋局，指定下一步是谁下的，玩家$a$想让终局分数最大，玩家$b$想让其最小，$a$下'$O$'，$b$下'$X$'，两人每一步都是最优的，求$T$个井字棋棋局的最终得分
+
+***
+
+### ~~究极打表~~
+
+考虑到最终棋局的状态只有$2×3^9=39366$种，这个数字相当之小，如果我们能把每个残局都直接指向其终局，那么$T$个棋局直接查询就能得到答案。
+
+#### 棋局的储存
+
+采用一个18位二进制来保存一个棋局，每两位表示一个格子的状态：00为空，01为'$O$'，10为'$X$'
+
+#### 记忆化搜索
+
+* $dfs$遍历棋盘9个格子的3种状态（'X'，'O'，空），如果当前棋局没有遍历过就继续$dfs$（记忆化保证不重复搜索）
+* 设$ans_a[i]$为在棋局i下a先手的最终得分，$ans_b[i]$同理；设$i_X$为在棋局$i$上（某一点）下'$X$'的最终得分，$i_O$同理，那么$ans_{a[i]}$的取值即为$max\,\{ans_a[i],ans_b[i_X]\}$，即取下完'$X$'后的棋局里$b$的得分，因为$a$下子后是$b$走，$ans_b[i]$的取值同理为$min\,\{ans_b[i],ans_a[i_O]\}$。为什么能直接取$ans_b[i_X]$和$ans_a[i_O]$，因为$max$和$min$的操作是在当层$dfs$之后的，也就是更新操作是从终局向空棋盘进行更新的
+
+***
+
+```
+#include <bits/stdc++.h>
+template<typename T>
+inline void read(T& x) { x = 0; char c = getchar(); while (!isdigit(c))c = getchar(); while (isdigit(c)) { x = x * 10 + c - '0'; c = getchar(); } }
+#define si(a) read(a)
+#define sii(a,b) read(a),read(b)
+#define siii(a,b,c) read(a),read(b),read(c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+//const ll MOD = 924844033;
+const int N = 2e6 + 10;
+int n, m;
+/*
+01-->gp    10-->na
+	 0   1   2
+	 3   4   5
+	 6   7   8
+*/
+char chess[9];
+ll gp_nxt[9], na_nxt[9];
+map<ll, int>ans;
+map<ll, int>vis;
+map<ll, int>ans_gp;
+map<ll, int>gp_vis;
+map<ll, int>ans_na;
+map<ll, int>na_vis;
+bool if_exist(ll x, int dex) { return x & (3 << (2 * dex)); }
+int score() {//计算分数
+	int sum = 0;
+	if (chess[0] == 'O' && chess[1] == 'O' && chess[2] == 'O') sum++;
+	if (chess[3] == 'O' && chess[4] == 'O' && chess[5] == 'O') sum++;
+	if (chess[6] == 'O' && chess[7] == 'O' && chess[8] == 'O') sum++;
+	if (chess[0] == 'O' && chess[3] == 'O' && chess[6] == 'O') sum++;
+	if (chess[1] == 'O' && chess[4] == 'O' && chess[7] == 'O') sum++;
+	if (chess[2] == 'O' && chess[5] == 'O' && chess[8] == 'O') sum++;
+	if (chess[0] == 'O' && chess[4] == 'O' && chess[8] == 'O') sum++;
+	if (chess[2] == 'O' && chess[4] == 'O' && chess[6] == 'O') sum++;
+	if (chess[0] == 'X' && chess[1] == 'X' && chess[2] == 'X') sum--;
+	if (chess[3] == 'X' && chess[4] == 'X' && chess[5] == 'X') sum--;
+	if (chess[6] == 'X' && chess[7] == 'X' && chess[8] == 'X') sum--;
+	if (chess[0] == 'X' && chess[3] == 'X' && chess[6] == 'X') sum--;
+	if (chess[1] == 'X' && chess[4] == 'X' && chess[7] == 'X') sum--;
+	if (chess[2] == 'X' && chess[5] == 'X' && chess[8] == 'X') sum--;
+	if (chess[0] == 'X' && chess[4] == 'X' && chess[8] == 'X') sum--;
+	if (chess[2] == 'X' && chess[4] == 'X' && chess[6] == 'X') sum--;
+	return sum;
+}
+void trs(ll x) {//转化为棋盘
+	for (int i = 0; i < 9; i++) {
+		int tmp = x & 3;
+		if (tmp == 1) chess[i] = 'O';
+		else if (tmp == 2) chess[i] = 'X';
+		else if (tmp == 0) chess[i] = '.';
+		tmp >>= 2;
+	}
+}
+ll trs_x() {//转化为数字(状态)
+	ll num = 0LL, tmp;
+	for (int i = 8; i >= 0; i--) {
+		if (chess[i] == 'O') tmp = 1LL;
+		else if (chess[i] == 'X') tmp = 2LL;
+		else if (chess[i] == '.') tmp = 0LL;
+		num = (num << 2) | tmp;
+	}
+	return num;
+}
+void dfs(ll now) {
+	ll tmp, tmp2;
+	int flag = 1;
+	for (int p = 0; p < 9; p++) {
+		if (if_exist(now, p))
+			continue;//p位置是否有数字
+		flag = 0;
+		tmp = now | gp_nxt[p];
+		tmp2 = now | na_nxt[p];
+		if (!vis[tmp])
+			chess[p] = 'O', vis[tmp]++, dfs(tmp);
+		chess[p] = '.';
+		if (!vis[tmp2])
+			chess[p] = 'X', vis[tmp2]++, dfs(tmp2);
+		chess[p] = '.';
+		if (!gp_vis[now]) ans_gp[now] = ans_na[tmp], gp_vis[now]++;
+		//else ans_gp[now] = max(ans_gp[now], ans[tmp]);
+		if (!na_vis[now]) ans_na[now] = ans_gp[tmp2], na_vis[now]++;
+		//else ans_na[now] = min(ans_na[now], ans[tmp2]);
+		ans_gp[now] = max(ans_gp[now], ans_na[tmp]);
+		ans_na[now] = min(ans_na[now], ans_gp[tmp2]);
+	}
+	if (flag) ans_na[now] = score(), ans_gp[now] = ans_na[now];
+}
+void yuchuli() {
+	gp_nxt[0] = 1LL, na_nxt[0] = 2LL;
+	for (int i = 1; i < 9; i++)
+		gp_nxt[i] = gp_nxt[i - 1] << 2, na_nxt[i] = na_nxt[i - 1] << 2;
+	dfs(0LL);
+}
+void solve() {
+	int type; si(type);
+	for (int i = 1, cnt = 0; i <= 3; i++) {
+		char cao[4];
+		scanf("%s", cao);
+		chess[cnt++] = cao[0];
+		chess[cnt++] = cao[1];
+		chess[cnt++] = cao[2];
+	}
+	if (type)
+		printf("%d\n", ans_gp[trs_x()]);
+	else
+		printf("%d\n", ans_na[trs_x()]);
+}
+int main() {
+	int t;
+	yuchuli();
+	si(t);
+	while (t--)
+		solve();
+	return 0;
+}
+/*
+2
+1
+.XX
+O.X
+XOX
+0
+OOO
+OOO
+OOO
+*/
+```
+

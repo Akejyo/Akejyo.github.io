@@ -1,0 +1,75 @@
+---
+title: "Linux固定IP"
+date: 2023-3-16
+tags:
+  - Linux
+---
+
+Ubuntu下固定ip
+
+# Linux固定IP
+
+### 修改VMware虚拟网络编辑器
+
+打开VMware顶部导航栏“编辑”，打开“虚拟化网络编辑器”，选择“VMnet8”，去掉 "使用本地DHCP服务将 IP地址分配给虚拟机"  的勾，该步骤的目的是禁止动态给Ubuntu虚拟机分配IP地址.
+
+<img :src="$withBase('/Linux/ip1.png')" style="zoom:50%;" />
+
+### 记录VWware网关IP地址
+
+上图里点击“NAT设置”，记住下图里的网关IP，一个人一个样.
+
+<img :src="$withBase('/Linux/ip2.png')" style="zoom:50%;" />
+
+### 修改VMware网络适配器设置
+
+控制面板→网络与 Internet→网络和共享中心→更改适配器设置→右键Vmware，属性
+
+<img :src="$withBase('/Linux/ip3.png')" style="zoom: 33%;" />
+
+修改Internet协议版本4(TCP/Ipv4)的属性，这里的IP不能与上面那个VMware虚拟机网关IP相同
+
+ <img :src="$withBase('/Linux/ip4.png')" style="zoom: 50%;" /><img src="withBase('/Linux/ip5.png)" style="zoom: 50%;" />
+
+### 设置Ubuntu虚拟器网络适配器
+
+编辑虚拟器设置，左边网络适配器，右边选自定义特定虚拟网络为Vmnet8(NAT模式)
+
+<img :src="$withBase('/Linux/ip6.png')" style="zoom:50%;" />
+
+### 网络配置文件设置
+
+`ip addr`查看网卡名称，我的Ubuntu系统网卡名称即下图的ens33
+
+<img :src="$withBase('/Linux/ip7.png')" style="zoom:50%;" />
+
+接下来要修改一个配置文件. 这里吃了亏，正在配置网络上不去网下不了vim之类的编辑器，只能直接找到文件去修改，打开/etc/netplan下的yaml文件 01-network-manager-all.yaml（需要授权才能编辑`sudo chmod 7 01-network-manager-all.yaml`），编辑内容如下：
+
+~~~
+network:
+  version: 2
+  renderer: NetworkManager
+  ethernets:
+    ens33:										#网卡名
+      dhcp4: no
+      dhcp6: no
+      addresses: [192.168.127.161/24] 			#本机ip设置一下
+      gateway4: 192.168.127.2 					#VMware网关ip
+      nameservers:								#DNS服务器
+        addresses: [114.114.114.114,8.8.8.8,1.1.1.1]	
+~~~
+
+编译网络配置`sudo netplan apply`
+
+重启一下系统`sudo reboot`
+
+ping一下`ping www.baidu.com`
+
+<img :src="$withBase('/Linux/ip8.png')">
+
+***
+
+参考教程：
+
+1.  [vmware虚拟机中 ubuntu 20.04通过nat设置静态ip（固定ip）_ubuntu虚拟机nat_杰之行的博客-CSDN博客](https://blog.csdn.net/haojie_duan/article/details/117914260) 
+2.  [vmware虚拟机配置ubuntu 18.04(20.04)静态IP地址 - 民工黑猫 - 博客园 (cnblogs.com)](https://www.cnblogs.com/yyee/p/12899953.html) 

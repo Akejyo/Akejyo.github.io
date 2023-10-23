@@ -1,0 +1,151 @@
+---
+title: "建设道路"
+date: 2022-3-1
+tags:
+  - Graph
+  - ACM课程
+---
+
+最小生成树，分治
+
+<!-- more -->
+
+# Q. 建设道路 
+
+**题意**：  **n**个节点，每个节点都值$A_i$，要求在**n**个节点中建**n-1**条边使图连通，建**i **到**j**的边的代价为$|i-j|\times D+A_i+A_j$。
+
+求建边的最小代价总和。
+
+
+
+ 因为是完全图，直接建图跑最小生成树会超时/超内存。为了减少边数，可以采用分治的方法
+
+* 将所有点分成两部分，只考虑跨两部分的建边。设左半部分为**i**,右半部分为**j**，则i和j建边的代价即为$(A_i+i*D)+(A_j- j *D)$
+
+* 对与左半部分，找出$min(A_i+i*D)$对应的**i**，右半部分找出**j**，将**i**和**j**与对面的点建边即可。
+
+  ```
+  void add(int tar, int l, int mid, int r, int type) {
+  	if (type) {//将b的mid->r部分连到a的A(找到的最小的那个点)
+  		for (int i = r; i > mid; i--)
+  			e.insert({ tar, i, a[tar] + b[i] });
+  	}
+  	else {//将a的l->mid部分连到b的B(找到的最小的那个点)
+  		for (int i = l; i <= mid; i++)
+  			e.insert({ i,tar,a[i] + b[tar] });
+  	}
+  }
+  ```
+
+  
+
+* 每部分是一半一半处理的，即对于**l**和**r**，左半部分找**l**到**mid**，右半部分找**mid**到**r**。继续上述操作，**r**更新为**mid**或**l**更新为**mid**+**1**(要跑两次)
+
+  ```
+  void fz(int l, int r) {//高贵的分治
+  	if (l != r) {
+  		int mid = (l + r) / 2;//找中点
+  		int A = findm(a, l, mid, 1);//找a部分在l到mid区间的最小
+  		int B = findm(b, mid, r, 0);//找b部分在mid到r区间的最小
+  		add(A, l, mid, r, 1);//加边
+  		add(B, l, mid, r, 0);
+  		fz(l, mid);//r更新为mid再跑一遍
+  		fz(mid + 1, r);//l更新为mid+1再跑一边
+  	}
+  }
+  ```
+
+  
+
+* 建图完成后跑一边**Kruskal**得到最小生成树
+
+***
+
+```
+#include <bits/stdc++.h>
+#define si(a) scanf("%d",&a)
+#define sii(a,b) scanf("%d%d",&a,&b)
+#define siii(a,b,c) scanf("%d%d%d",&a,&b,&c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+int jd(int a) { return a < 0 ? (a * -1) : a; }
+int n, d, m;
+struct road {//对于点
+	int u, v;
+	ll w;
+	bool friend operator < (road a, road b) { return a.w < b.w; }
+};
+bool cmp(road a, road b) { return a.w < b.w; }
+int fa[200010];
+ll a[200010], b[200010];
+inline signed gf(int x) { return fa[x] == x ? x : fa[x] = gf(fa[x]); }
+ll cost(ll a, int ai, ll b, int bi) { return (ll)jd(ai - bi) * (ll)d + (ll)a + (ll)b; }//计算权重
+ll an;
+multiset<road>e;
+int findm(ll* c, int l, int r, int type) {//找最小的
+	int ai;
+	if (type) {//l -> mid
+		ai = l;
+		for (int i = l; i <= r; i++)
+			if (c[ai] > c[i])
+				ai = i;
+	}
+	else {//mid -> r
+		ai = r;
+		for (int i = r; i > l; i--)
+			if (c[ai] > c[i])
+				ai = i;
+	}
+	return ai;
+}
+void add(int tar, int l, int mid, int r, int type) {
+	if (type) {//将b的mid->r部分连到a的A
+		for (int i = r; i > mid; i--)
+			e.insert({ tar, i, a[tar] + b[i] });
+	}
+	else {
+		for (int i = l; i <= mid; i++)
+			e.insert({ i,tar,a[i] + b[tar] });
+	}
+}
+void holyshit(int l, int r) {//高贵的分治
+	if (l != r) {
+		int mid = (l + r) / 2;
+		int A = findm(a, l, mid, 1);
+		int B = findm(b, mid, r, 0);
+		add(A, l, mid, r, 1);
+		add(B, l, mid, r, 0);
+		holyshit(l, mid);
+		holyshit(mid + 1, r);
+	}
+}
+void solve() {
+	sii(n, d);
+	for (int i = 1; i <= n; i++) {
+		fa[i] = i;
+		int tem; si(tem);
+		a[i] = (ll)tem - (ll)d * (ll)i;
+		b[i] = (ll)tem + (ll)d * (ll)i;
+	}
+	holyshit(1, n);
+	for (auto it : e) {
+		int x, y;
+		if ((x = gf(it.u)) != (y = gf(it.v))) {
+			fa[x] = y;
+			an += it.w;
+		}
+	}
+	printf("%lld", an);
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+```
+

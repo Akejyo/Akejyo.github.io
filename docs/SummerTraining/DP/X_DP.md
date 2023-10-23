@@ -1,0 +1,89 @@
+---
+title: "惊魂工创1"
+date: 2022-3-1
+tags:
+  - DP
+  - ACM课程
+---
+
+树上DP
+
+<!-- more -->
+
+# X. 惊魂工创1
+
+**题意**: 给定一个数，边有边权，每次操作可以使一个边的边权加一，要求每个叶节点到根的最短距离相等，求最小操作次数
+
+***
+
+**分析**：如果我们知道了一个节点$i$到其后面的叶节点的最远距离$DEP[i]$，那么$i$到$j$的边要修改的值就是$DEP[i]-DEP[j]-w[i][j]$($j$取$i$的所有儿子，$w[i][j]$为$i$到$j$的边权)，最总答案即为$DEP[i]$的求和。
+
+***
+
+```
+#include <bits/stdc++.h>
+template<typename T>
+inline void read(T& x) { x = 0; char c = getchar(); while (!isdigit(c))c = getchar(); while (isdigit(c)) { x = x * 10 + c - '0'; c = getchar(); } }
+#define si(a) read(a)
+#define sii(a,b) read(a),read(b)
+#define siii(a,b,c) read(a),read(b),read(c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+int jd(int a) { return a < 0 ? (a * -1) : a; }
+const ll MOD = 924844033;
+//const int N = 1e5 + 10;
+int n, m;
+int mod,id;
+int vis[500010],vis2[500010];
+ll DEP[500010];
+ll an;
+struct edge {
+	int v;
+	ll w;
+};
+vector<edge>e[500010];
+ll bfs1(int u) {
+	if (vis[u])
+		return 0;
+	vis[u] = 1;
+	for (auto it : e[u]) 
+		if (!vis[it.v])
+			DEP[u] = max(DEP[u], bfs1(it.v)+it.w);
+	return DEP[u];
+}
+void bfs2(int u) {
+	if (vis2[u])
+		return;
+	vis2[u] = 1;
+	for (auto it : e[u]) {
+		if (!vis2[it.v]) {
+			an += DEP[u] - it.w - DEP[it.v];
+			bfs2(it.v);
+		}
+	}
+}
+void solve(){
+	sii(n,id);
+	for (int i = 1; i < n; i++) {
+		int a, b; 
+		ll  t; siii(a, b, t);
+		e[a].push_back({ b, t});
+		e[b].push_back({ a,t});
+	}
+	bfs1(id); 
+	bfs2(id);
+	printf("%lld", an);
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+
+```
+

@@ -1,0 +1,97 @@
+---
+title: "Linux安装"
+date: 2023-3-15
+tags:
+  - Linux
+---
+
+VMware安装Ubuntu
+
+# Linux安装
+
+安装Linux系统有很多方式：裸机安装、双系统、虚拟机等等，这里选择虚拟机上安装.
+
+### 安装虚拟机（VMware）
+
+1. 进入[官网](https://www.vmware.com/cn.html) ，顶部导航栏：产品→Workstation Pro
+
+<img :src="$withBase('/Linux/1.png')" style="zoom: 30%;" />
+
+2. 下载试用版，这样做不用注册也不用购买就可以下载
+
+<img :src="$withBase('/Linux/2.png')" style="zoom:30%;" />
+
+3. 接下来就是正常的安装流程，选项都基本可以默认过去，安装完成后要求密钥可以直接网上搜
+
+***
+
+### 虚拟机装Linux（Ubuntu）
+
+这里选择安装Ubuntu，这里放一个Ubuntu的[介绍]( [什么是 Ubuntu？ - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/448301409) )
+
+#### 虚拟机硬件配置
+
+1. 打开虚拟机，'创建新的虚拟机'
+
+<img :src="$withBase('/Linux/3.png')" style="zoom:33%;" />
+
+2. 这里的配置两个都可以选，我选的是自定义
+
+<img :src="$withBase('/Linux/4.png')" style="zoom:33%;" />
+
+3. 一路默认到下图，选“稍后安装操作系统”
+
+<img :src="$withBase('/Linux/5.png')" style="zoom:33%;" />
+
+4. 记得选对操作系统
+
+<img :src="$withBase('/Linux/6.png')" style="zoom:33%;" />
+
+5. 一路默认，注意一下虚拟机的名称/路径就行，一直到下图，都选2就差不过够用，不够用后面也可以改
+
+<img :src="$withBase('/Linux/7.png')" style="zoom:33%;" />
+
+6. 这个内存也可以后期改，我选的是4G
+
+<img :src="$withBase('/Linux/8.png')" style="zoom:33%;" />
+
+7. 网络类型选NAT，SCSI控制器选LSI Logic(L)，虚拟磁盘类型选SCSI(S)
+8. 创建新虚拟磁盘，磁盘大小自己调
+
+ <img :src="$withBase('/Linux/9.png')" style="zoom:33%;" /><img src="$withBase('/Linux/10.png')" style="zoom: 33%;" />
+
+9. 后面一路默认，取名字什么的，虚拟机就配置结束，如下图
+
+<img :src="$withBase('/Linux/11.png')" style="zoom:30%;" />
+
+#### Ubuntu镜像安装
+
+1. 刚才虚拟机配好的那个图里，点“编辑虚拟机设置”
+2. 左边 CD/DVD(SATA)，右边选使用ISO镜像文件，这个镜像文件可以网上找资源
+
+<img :src="$withBase('/Linux/12.png')" style="zoom:33%;" />
+
+3. 点击“开启虚拟机”，接下来就是一波语言、键盘什么的设置，大多可以默认过去
+4. 安装完毕后重启虚拟机，安装结束，下图是我稍作修改后的虚拟机主页面
+
+<img :src="$withBase('/Linux/13.png')" style="zoom:33%;" />
+
+5. 装完虚拟机后，我又根据自己的喜好和需求做了一些配置，包括：
+
+   * 装配了GDebi来安装DEB包
+
+     `sudo apt install gdebi`
+
+   * 用上面的GDebi下载了edge浏览器和LinuxQQ
+
+   * 装配了fcitx5中文输入法，[参考教程](https://zhuanlan.zhihu.com/p/529892064) 
+
+   * 配置Clash，[参考教程](https://www.jianshu.com/p/365bbb5d5c85) 
+
+***
+
+安装参考教程：
+
+1.  [ 虚拟机VMware下载与安装教程（详细）_vmware虚拟机_-借我杀死庸碌的情怀-的博客-CSDN博客](https://blog.csdn.net/weixin_45912291/article/details/108894737) 
+2.  [手把手教你安装Linux虚拟机 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/41940739) 
+3.  [在 Ubuntu 中使用 GDebi 快速安装 DEB 包_BugMiaowu2021的博客-CSDN博客](https://blog.csdn.net/m0_46278037/article/details/120341479) 

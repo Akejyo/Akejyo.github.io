@@ -1,0 +1,134 @@
+---
+title: "奥日与风袭废墟"
+date: 2022-3-1
+tags:
+  - Math
+  - ACM课程
+
+---
+
+线性筛
+
+<!-- more -->
+
+# W.奥日与风袭废墟
+
+**题意**：求500000内的$\varphi(i),\mu(i),\sigma_0(i),\sigma_1(i),f(i)=\sum_{i|n}\mu(i)\varphi(i)\sigma(\frac{n}{i})$
+
+***
+
+**线性筛**：对于积性函数$f$，如果$i$和$j$互质，就有$f(i \times j)=f(i) \times f(j)$，其他情况另作讨论
+
+设$p_1$是$n$的最小质因子，${n'=\frac n p_1}$m，那么$n$会通过$n'\times p_1$筛掉$\varphi$：若$n'\,mod\,p_1=0$，$\varphi(n)=p_i\times\varphi(n')$；若$n' \,mod\, {p_1}\neq0$，$\varphi(n)=(p_1-1)\times\varphi(n')$
+
+2. $\mu$：若$n'\,mod\, p_1=0$，$\mu(n)=1$；若$n'\,mod\, p_1 \neq 0$，$\mu(n)=-\mu(n')$
+3. $\sigma_0$：利用结论$\sigma_{0}(i)=\prod_{i=1}^{m}{(c_{i}+1)}$
+4. $\sigma_1$：利用结论$\sigma_{1}(A)=\prod_{i=1}^{n}(\sum_{j=0}^{c_{i}}p_{i}^{j})$
+5. $f$：在处理$\sigma_0$时我们会得到一个辅助数组，记录了一个数的最小质因数的出现次数。设$n$最小质因数的出现次数为$t_1$：若$n'=p_1^{t_1}$，此时只需要暴力求解sum即可，只求和了$t_1$个数；若$n'\neq{p_1^{t_1}}$，根据积性函数的性质，有$f(n)=f(\frac {n'} {p_1^{t_1}}) \times f(p_1^{t_1+1})$，就是把原来的两个数重新拆分组合成俩个互质的数，然后就可以直接乘起来了。
+
+***
+
+```
+#include <bits/stdc++.h>
+template<typename T>
+inline void read(T& x) { x = 0; char c = getchar(); while (!isdigit(c))c = getchar(); while (isdigit(c)) { x = x * 10 + c - '0'; c = getchar(); } }
+#define si(a) read(a)
+#define sii(a,b) read(a),read(b)
+#define siii(a,b,c) read(a),read(b),read(c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+const ll MOD = 1e9 + 7;
+const int N = 5e5 + 10;
+//int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+ll gcd(ll a, ll b) { return a == 0 ? b : gcd(b % a, a); }
+int n, m;
+//prime→质数，phi→欧拉，mu→莫比乌斯，is_cop→标记为合数
+int prime[N], phi[N], mu[N], is_cop[N];
+//p_num[i]→i最小质数出现次数，pk_sum[i]→i最小质因子的\sum_{i=0}^{k}{p^i}
+//sigm0→σ0，sigm1→σ1
+int p_num[N], pk_sum[N], sigm0[N], sigm1[N], f[N];
+int ttt = 0;
+int qpow(int a, int n) {//快速幂
+	int cnt = 1;
+	while (n > 0) {
+		if (n & 1) cnt *= a;
+		a *= a, n >>= 1;
+	}
+	return cnt;
+}
+void init() {
+	int cnt = 0;
+	phi[1] = mu[1] = sigm0[1] = sigm1[1] = pk_sum[1] = 1, f[1]=1;
+	for (int i = 2; i <= n; i++) {
+		if (!is_cop[i]) {//质数
+			prime[++cnt] = i;
+			phi[i] = i - 1;
+			mu[i] = -1;
+			sigm0[i] = 2;
+			p_num[i] = 1;
+			sigm1[i] = i + 1;
+			pk_sum[i] = i + 1;
+			f[i] = 2;
+		}
+		for (int j = 1; j <= cnt; j++) {
+			int tmp = i * prime[j];
+			if (tmp > n) break;
+			is_cop[tmp] = 1;
+			if (i % prime[j] == 0) {//因为是prime，所以为不互质
+				//printf("%d:%d*%d=%d\n", ++ttt, i, prime[j], i * prime[j]);
+				phi[tmp] = phi[i] * prime[j];
+				mu[tmp] = 0;
+				p_num[tmp] = p_num[i] + 1;
+				sigm0[tmp] = sigm0[i] / p_num[tmp] * (p_num[tmp] + 1);
+				pk_sum[tmp] = 1 + pk_sum[i] * prime[j];
+				sigm1[tmp] = sigm1[i] / pk_sum[i] * pk_sum[tmp];
+				int X = i / qpow(prime[j], p_num[i]);
+				if (X == 1) {
+					int cao = 1;
+					for (int i = 1; i <= p_num[i] + 1; i++, cao*=prime[j])
+						f[tmp] += mu[cao] * phi[cao] * sigm1[tmp / cao];
+				}
+				else 
+					f[tmp] = f[X] * f[qpow(prime[j], p_num[i] + 1)];
+			//	for (int k = 1; k <= tmp; k++)
+				//	if (tmp % k == 0)f[tmp] += mu[k] * phi[k] * sigm1[tmp / k];
+				break;
+			}
+			phi[tmp] = phi[i] * phi[prime[j]];
+			mu[tmp] = mu[i] * mu[prime[j]];
+			p_num[tmp] = 1;
+			sigm0[tmp] = sigm0[i] * sigm0[prime[j]];
+			pk_sum[tmp] = 1 + prime[j];
+			sigm1[tmp] = sigm1[i] * sigm1[prime[j]];
+			f[tmp] = f[i] * f[prime[j]];
+		}
+	}
+}
+void solve() {
+	si(n);
+	init();
+	for (int i = 1; i <= n; i++) printf("%d ", phi[i]);
+	printf("\n");
+	for (int i = 1; i <= n; i++)printf("%d ", mu[i]);
+	printf("\n");
+	for (int i = 1; i <= n; i++)printf("%d ", sigm0[i]);
+	printf("\n");
+	for (int i = 1; i <= n; i++)printf("%d ", sigm1[i]);
+	printf("\n");
+	for (int i = 1; i <= n; i++)printf("%d ", f[i]);
+
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+/*
+
+*/
+```
+

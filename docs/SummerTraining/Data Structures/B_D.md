@@ -1,0 +1,184 @@
+---
+title: "啊哈哈哈，这收集糖果多是一件美事啊"
+date: 2022-3-1
+tags:
+  - Data Structures
+  - ACM课程
+
+---
+
+线段树
+
+<!-- more -->
+
+# B. 啊哈哈哈，这收集糖果多是一件美事啊 
+
+**题意**：维护一个数据结构，支持区间修改和区间查询
+
+### 线段树(lazy标记)
+
+>  OI wiki：线段树可以O(log*N*) 的时间复杂度内实现单点修改、区间修改、区间查询（区间求和，求区间最大值，求区间最小值）等操作。 
+
+***
+
+#### 线段树的基本结构：
+
+使用线段树来储存数组$a$时，线段树的一个节点存储的是$a$上一区间的信息。将数组$a$不断一分为二，线段树上的一个节点$i$，其左儿子为$i*2$（存储节点**i**的左半区间），右儿子为$i*2+1$（存储节点**i**的右半区间）
+
+**举例**：
+
+对于数组$a[4]={1,2,3,4}$，线段树$d[1]={1,2,3,4}$，$d[1]$的左儿子$d[1*2]=d[2]={1,2}$，$d[1]$的右儿子$d[1*2+1]=d[3]={3,4}$；然后对于$d[2]$的左儿子$d[2*2]=d[4]={1}$，$d[2]$的右儿子$d[2*2+1]=d[5]={2}$；$d[3]$的左儿子$d[3*2]=d[6]={3}$，$d[3]$的右儿子$d[3*2+1]={4}$
+
+当我们要修改数组$a$某点的值时，要修改所有包含$a$的线段树节点的信息，询问数组$a$上$L$到$R$的信息，可以通过递归不断在线段树上找合理的区间再处理答案。
+
+
+
+**BUT**，这题要求做到区间修改，如果每次修改都一个一个遍历去改线段树那显然时间就寄了，所以就有了一个叫懒惰标记（lazy）的东西。
+
+***
+
+### Lazy标记
+
+延迟对线段树节点信息的修改。每次进行区间修改时，标记改区间被修改过，但不真正的去修改其子节点的信息。子节点的信息在第二次访问（更新或询问）到有lazy标记的节点时才更新。
+
+***
+
+```
+#include <bits/stdc++.h>
+#define si(a) scanf("%d",&a)
+#define sii(a,b) scanf("%d%d",&a,&b)
+#define siii(a,b,c) scanf("%d%d%d",&a,&b,&c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+int jd(int a) { return a < 0 ? (a * -1) : a; }
+const ll MOD = 998244353;
+int n, m;
+int fa[5000100];
+inline signed gf(int x) { return fa[x] == x ? x : fa[x] = gf(fa[x]); }
+struct qujian {
+	int l, r, len;
+	ll S;//区间和
+	ll lazy1 = 0;//加
+	ll lazy2 = 1;//乘
+};
+qujian ary[4000010];
+int a[400000];
+void smallop(int p) {
+	int l = p * 2;
+	int r = p * 2 + 1;
+
+	ary[l].S *= ary[p].lazy2;
+	ary[r].S *= ary[p].lazy2;
+	ary[l].S += (ll)ary[l].len * ary[p].lazy1;
+	ary[r].S += (ll)ary[r].len * ary[p].lazy1;
+
+	ary[l].lazy1 *= ary[p].lazy2;
+	ary[l].lazy1 += ary[p].lazy1;
+	ary[l].lazy2 *= ary[p].lazy2;
+
+	ary[r].lazy1 *= ary[p].lazy2;
+	ary[r].lazy1 += ary[p].lazy1;
+	ary[r].lazy2 *= ary[p].lazy2;
+	
+
+	ary[l].S %= MOD;
+	ary[r].S %= MOD;
+	ary[l].lazy1 %= MOD;
+	ary[l].lazy2 %= MOD;
+	ary[r].lazy1 %= MOD;
+	ary[r].lazy2 %= MOD;
+
+	ary[p].lazy1 = 0;
+	ary[p].lazy2 = 1;
+}
+void build(int L, int R, int p) {
+	ary[p].l = L;
+	ary[p].r = R;
+	ary[p].len = R - L + 1;
+	int mid = (L + R) / 2;
+	if (L == R) {
+		ary[p].S = (ll)a[L];
+		return;
+	}
+	build(L, mid, p * 2);
+	build(mid + 1, R, p * 2 + 1);
+	ary[p].S = (ary[p * 2].S + ary[p * 2 + 1].S) % MOD;
+}
+void update(int l, int r, int c, int type, int p) {//要求改的区间 + 修改值 + 修改类型 + 当前节点
+	int s = ary[p].l;
+	int t = ary[p].r;
+	int mid = (s + t) / 2;
+	if (ary[p].l == 0)
+		return;
+	if (s >= l && t <= r) {//是子区间直接操作，标记lazy
+		if (type == 2) {//区间加
+			
+			ary[p].S += (ll)ary[p].len * (ll)c;
+			ary[p].S %= MOD;
+			ary[p].lazy1 += (ll)c;
+			ary[p].lazy1 %= MOD;
+		}
+		else if (type == 1) {//区间乘
+			ary[p].S *= (ll)c;
+			ary[p].S %= MOD;
+			ary[p].lazy2 *= (ll)c;
+			ary[p].lazy2 %= MOD;
+			ary[p].lazy1 *= (ll)c;
+			ary[p].lazy1 %= MOD;
+		}
+		return;
+	}
+	//更新子节点(因为lazy标记只能存一次)
+	smallop(p);
+	if (l <= mid)
+		update(l, r, c, type, p * 2);
+	if (r > mid)
+		update(l, r, c, type, p * 2 + 1);
+	ary[p].S = (ary[p * 2].S + ary[p * 2 + 1].S) % MOD;
+}
+ll Get(int l, int r, int p) {
+	int s = ary[p].l;
+	int t = ary[p].r;
+	ll an = 0;
+	if (s >= l && t <= r)
+		return ary[p].S;
+	smallop(p);
+	if (l <= (s + t) / 2)
+		an += Get(l, r, p * 2);
+	an %= MOD;
+	if (r >= (s + t) / 2 + 1)
+		an += Get(l, r, p * 2 + 1);
+	an %= MOD;
+	return an;
+}
+void solve() {
+	sii(n, m);
+	for (int i = 1; i <= n; i++)
+		si(a[i]);
+	build(1, n, 1);
+	for (int i = 1; i <= m; i++) {
+		int op; si(op);
+		if (op < 3) {
+			int L, R, k;
+			siii(L, R, k);
+			update(L, R, k, op, 1);
+		}
+		else {
+			int L, R;
+			sii(L, R);
+			printf("%lld\n", Get(L, R, 1));
+		}
+	}
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+```
+

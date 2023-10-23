@@ -1,0 +1,120 @@
+---
+title: "下棋"
+date: 2022-3-1
+tags:
+  - DP
+  - ACM课程
+---
+
+棋盘
+
+<!-- more -->
+
+# B. 下棋
+
+**题意**:一个n*n的矩形网图，每个格子都有值**且互不相同**，Alice和Bob轮流将棋子放置在棋盘上并获得所放位置的分数。下棋规则：
+
+1. 除去第一次放置棋子，每一次放置的棋子必须保证和上一次放置的棋子的曼哈顿距离**大于** m；
+2. 棋子可以重叠放置。
+
+Alice先手，棋局进行$2^{2022}$回合后结束，问Alice在哪些位置下第一步棋必胜。
+
+***
+
+**分析**:Alice先手下完后获得分数a(i,j)，Bob如果想赢就必须在可选范围内选一个大于a(i,j)的格子才**有可能赢**，然后我们只要判断Bob选的这个格子是否是一个先手必胜点，如果是，那么Alice就寄了，Alice不能下a(i,j)。
+
+**DP**:首先将格子分数a(i,j)从大到小排序，顺序遍历a。因为为了判断一个点是不是必胜点要判断**可选范围内有无比该点分数大的必胜点**，那么从大到小去dp的话就不需考虑大小了，只需考虑是否有必胜点即可。
+
+​        设dp(i,j)是(i,j)先手必胜或必败，查询是否存在一个点**必胜点**(x,y)，满足abs(x-i)+abs(y-j)>m。找必胜点可以有一点小结论：对于棋盘的四个角，分别保存距离最远的必胜点坐标，那么距离(i,j)曼哈顿距离最远的必胜点一定是保存的四个点之一，所以每次只需判断四个点就行，(i,j)判断是必胜点时再更新棋盘四点的保存点。
+
+~~~
+void update(point a) {//更新棋盘四点的最近点
+	int tem;
+	for (int i = 0; i < 4; i++) 
+		if ((tem = mhd(QiPanSiJiao[i], a)) < jud[i].w)
+			jud[i].x = a.x, jud[i].y = a.y, jud[i].w = tem;
+}
+~~~
+
+~~~
+for (int i = 2; i <= cnt; i++) {
+		flag = 1;
+		for (int j = 0; j < 4; j++)//查棋盘四点保存的必胜点与(i,j)的距离是否可取
+			if (mhd(jud[j], P[i]) > m)
+				flag = 0;
+		if (flag) {//该点是必胜点
+			ans.push_back(P[i]);
+			update(P[i]);//更新棋盘四点保存的点
+		}
+	}
+~~~
+
+***
+
+```
+#include <bits/stdc++.h>
+template<typename T>
+inline void read(T& x) { x = 0; char c = getchar(); while (!isdigit(c))c = getchar(); while (isdigit(c)) { x = x * 10 + c - '0'; c = getchar(); } }
+#define si(a) read(a)
+#define sii(a,b) read(a),read(b)
+#define siii(a,b,c) read(a),read(b),read(c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+//const ll MOD = 924844033;
+const int N = 5e5 + 10;
+int n, m;
+int num[2010][2010];
+int M, x, y, cnt, flag;
+struct point { int x, y, w; };
+point jud[4];//左上、右上、左下、右下
+point jud_xy[4];
+point P[4000010];
+vector<point>ans;
+bool cmp(point a, point b) { return a.w > b.w; }
+bool cmp2(point a, point b) { return a.x == b.x ? a.y < b.y : a.x < b.x; }
+int mhd(point a, point b) { return abs(a.x - b.x) + abs(a.y - b.y); }
+void update(point a) {//更新四点的最近点
+	int tem;
+	for (int i = 0; i < 4; i++) 
+		if ((tem = mhd(jud_xy[i], a)) < jud[i].w)
+			jud[i].x = a.x, jud[i].y = a.y, jud[i].w = tem;
+}
+void solve() {
+	sii(n,m);
+	for (int i = 1; i <= n; i++)
+		for (int j = 1; j <= n; j++)
+			si(num[i][j]), P[++cnt] = { i,j,num[i][j] };
+	jud[0].w = jud[1].w = jud[2].w = jud[3].w = 5000;
+	jud_xy[0] = { 1,1,0 }, jud_xy[1] = { 1,n,0 }, jud_xy[2] = { n,1,0 }, jud_xy[3] = { n,n,0 };
+	sort(P + 1, P + cnt + 1, cmp);
+	update(P[1]);
+	ans.push_back(P[1]);
+	for (int i = 2; i <= cnt; i++) {
+		flag = 1;
+		for (int j = 0; j < 4; j++)
+			if (mhd(jud[j], P[i]) > m)
+				flag = 0;
+		if (flag) {//该点是必胜点
+			ans.push_back(P[i]);
+			update(P[i]);
+		}
+	}
+	sort(ans.begin(), ans.end(), cmp2);
+	int ttt = ans.size();
+	printf("%d\n", ttt);
+	for (int i = 0; i < ttt; i++)
+		printf("%d %d\n", ans[i].x, ans[i].y);
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+
+```
+

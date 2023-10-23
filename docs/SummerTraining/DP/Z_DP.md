@@ -1,0 +1,65 @@
+---
+title: "砍编剧"
+date: 2022-3-1
+tags:
+  - DP
+  - ACM课程
+---
+
+01背包
+
+<!-- more -->
+
+# Z. 砍编剧 
+
+**题意**: 01背包
+
+***
+
+直接给出01背包的做法：
+
+~~~
+for (int i = 1; i <= n; i++)
+		for (int j = m; j >= w[i]; j--)
+			dp[j] = max(dp[j], dp[j - w[i]] + k[i]);
+~~~
+
+***
+
+```
+#include <bits/stdc++.h>
+template<typename T>
+inline void read(T& x) { x = 0; char c = getchar(); while (!isdigit(c))c = getchar(); while (isdigit(c)) { x = x * 10 + c - '0'; c = getchar(); } }
+#define si(a) read(a)
+#define sii(a,b) read(a),read(b)
+#define siii(a,b,c) read(a),read(b),read(c)
+#define fl float
+#define ll long long int
+#define ull unsigned long long int
+using namespace std;
+int gcd(int a, int b) { return a == 0 ? b : gcd(b % a, a); }
+int jd(int a) { return a < 0 ? (a * -1) : a; }
+const int MOD = 1e9 + 7;
+const int N = 1e5 + 10;
+int n, m;
+int k[550], w[550];
+int dp[55555];
+void solve() {
+	sii(n, m);
+	for (int i = 1; i <= n; i++)si(k[i]);
+	for (int i = 1; i <= n; i++)si(w[i]);
+	for (int i = 1; i <= n; i++)
+		for (int j = m; j >= w[i]; j--)
+			dp[j] = max(dp[j], dp[j - w[i]] + k[i]);
+	printf("%d", dp[m]);
+}
+int main() {
+	int t;
+	/*si(t);
+	while (t--)*/
+	solve();
+	return 0;
+}
+
+```
+

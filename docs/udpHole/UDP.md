@@ -1,0 +1,637 @@
+---
+title: "UDP打洞理论及实现"
+date: 2023-5-7
+tags:
+  - socket
+  - Linux
+---
+
+<!-- more -->
+
+# UDP打洞理论及实现
+
+### 1.1 NAT简介
+
+NAT（Network Address Translation，网络地址转换），是一种在IP数据包通过路由器或防火墙时重写IP地址或目的IP地址的技术。这种技术使得多台主机可以通过一个共有IP地址访问互联网的私有网络中，解决了IPv4地址短缺的问题[2]。
+
+ 
+
+### 1.2 P2P简介
+
+  P2P（peer-to-peer，对等式网络、点对点技术），是一种去中心化、依靠用户 群交换信息的互联网体系。P2P使得人们通过互联网直接联系起来，用户可以直接连接到其他用户的计算机来交换文件，而不是连接浏览器去下载[3]。
+
+
+
+### 1.3 UDP
+
+#### 1.3.1 UDP简介
+
+  UDP（User Datagram Protocol，用户数据包协议），是一种面向数据包的通信协议，只提供数据的不可靠传递。UDP适用于对时间要求高、可以容忍数据丢包的应用[4]。
+
+
+
+#### 1.3.2 UDP打洞技术的意义
+
+  由于NAT的存在，NAT对于发送过来的消息，只会接收存在对应映射表的数据。假设NAT A下的设备1想与NAT B下的设备2通信，在此之前二者没有联络过，设备1向NAT B的公网地址通信，但NAT B并没有来自NAT A的映射，于是NAT B会直接将数据包丢弃。这就需要UDP打洞来穿透NAT。
+
+
+
+## 第二章 系统分析
+
+
+
+### 2.1 NAT的类型分析
+
+NAT有多种类型，类型的不同会影响到能否进行UDP打洞以及打洞的方式。下面是各种NAT类型的介绍。
+
+假设内部主机A的端口Port_A通过NAT设备的外网端口Port_nat映射到外部主机B地址的端口Port_B（A:Port_A→Port_nat→B:Port_B）：
+
+1. 完全圆锥型NAT（Full cone NAT,即NAT1），任何外部主机都可以通过Port_nat向主机A发送数据，NAT设备无条件将Port_nat收到的数据转发给Port_A。
+
+2. 受限圆锥型NAT（Address-Restricted cone NAT，即NAT2），相比于NAT1，只有来自主机B的数据才会被转发。
+
+3. 端口受限圆锥型NAT（Port-Restricted once NAT，即NAT3），相比于NAT1，只有来自主机B的Port_B端口的数据才会被转发。
+
+4. 对称NAT（Symmetric NAT，即NAT4），NAT4的受限特性与NAT3一样。
+
+对于圆锥型NAT（NAT1-NAT3），只要内部主机A继续用Port_A发送数据，该数据端口经过NAT设备映射后都会转变成一个固定不变的端口；而在对称性NAT中，如果发送目标的IP或端口改变，NAT设备会使用一个新端口重新建立一个映射关系。
+
+ 
+
+### 2.2 UDP打洞方式分析
+
+设有客户端A和B，服务器S；A的NAT设备为NAT_A，B的NAT设备为NAT_B；A的IP和端口为ip_A和port_A，B的IP和端口为ip_B和port_B；A的数据经过NAT_A的映射的IP和端口为ip_NA和port_NA，B的数据经过NAT_B的映射的IP和端口为ip_NB和port_NB：
+
+ 
+
+#### 2.2.1 连接双方都是圆锥型NAT
+
+1. A向S发送任意数据，S获取数据的同时会获得由NAT_A转换的ip_NA和port_NA；B进行同样操作；
+
+  ![u1](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u1.png)
+
+​																				图2-1 
+
+​											（蓝色为发送的数据，括号内数字代表次序）
+
+ 在收到A,B的数据后，将ip_NA和port_NA发给B，将ip_NB和port_NB发送给A；
+
+2. A向ip_NB:port_NB发送任意数据，根据NAT的要求，由于NAT_B里没有与A的通信记录（映射表），NAT_B会直接将该数据丢弃。而NAT_A此时建立了到NAT_B的映射表，之后将允许NAT_B发送消息过来；
+
+3. B向ip_NA:port_NA发送任意数据，由3可得，A可以接受到信息，此时A再向B发送连接成功的信息，打洞完成，A和B可以直接通信。
+
+  ![u2](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u2.png)
+
+​																					图2-2 
+
+​																（箭头表示发送的目标地址）
+
+#### 2.2.2 一方为NAT4，一方为NAT1/NAT2
+
+  与前一种情况类似，但是需要NAT1/NAT2方的设备执行打洞操作。NAT4由于其特性，当发送目标改变后会改变自身内部地址的映射，导致无法建立联系。
+
+ 
+
+#### 2.2.3 一方为NAT4，一方为NAT3/NAT4
+
+  这种情况下，由于NAT3/NAT4端口受限，而NAT4会改变端口，一般认为不能进行NAT穿透。但目前的研究是，可以使用生日攻击算法等算法来进行端口预测，进而实现打洞。下面简要介绍一种用于在双方皆为对称性NAT的情况下进行NAT穿透的方法[5]。
+
+
+
+1. 环境：终端A和B，NAT A和B，服务器C和D。
+
+2. 终端A和B分别与服务器C、D建立联系，以终端A为例：
+
+   （1）终端A与服务器C建立联系，服务器C分析NAT A映射的端口号并传回给终端A。
+
+   （2）终端A向服务器D发送数据包，包含（1）中分析出来的端口号，同时服务器也记录NAT A的映射端口号。服务器D根据比较这两个端口号，可以确定端口号是属于哪种变化趋势的，即递增、递减或随机分配。
+
+   （3）若端口号变化呈递增或递减的情况，可以通过等差关系获得下一次端口号；若端口号是随机分配的，总的端口号数量为N=65535-1024，由密码学的生日攻击可得，随机猜测439次就可以保证至少一次猜测成功的概率达到95%。因此只要猜测次数足够多，成功几乎是必然的。
+
+3. NAT A与服务器C、D的交流可以帮助预测一个合适的端口号，由服务器D发送给终端B，终端B依据预测端口号尝试发送数据包给NAT A，此时NAT B将记录这次连接的信息。
+
+4. NAT B用同样的方式将预测端口号从服务器D发送给终端A，终端A向终端B发送数据包。由于前一步里终端B已经保留了和终端A的连接记录，此次连接会成功。
+
+
+
+
+## 第三章 详细设计及实现
+
+### 3.1程序语言和实验环境的选择
+
+由于本人对C++语言很熟悉，所以采用C++语言；实验环境使用Ubuntu虚拟机，即使用Linux环境下C++实现socket编程。
+
+ 
+
+### 3.2 检查网络环境的NAT类型
+
+ ![u3](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u3.png)
+
+
+由2.2可得，知道自己所处网络环境的NAT类型对该实验是必要的，这里使用NatTypeTester来进行测试，结果如图：
+
+NAT类型为FullCone，即完全圆锥型NAT。
+
+完全圆锥型NAT对通信的限制要求很小，但不妨碍测试UDP打洞的功能。
+
+### 3.3 Linux的Socket编程准备知识
+
+1. `int socket(int family, int type, int protocol)` 该函数的功能是创建套接字描述符：
+
+   （1）family 表示套接字的通信域，决定socket的地址类型，这里使用AF_INET，即IPv4因特网域；
+
+   （2）type 确定socket的类型，这里使用SOCK_DRGRAM，即UDP连接；
+
+   （3）protocol 指定协议，这里选择0，即选择type类型对应的默认协议。
+
+2. ```
+   struct sockaddr_in{//该结构体用来存储ip和port，位于netinet/in.h
+      short sin_family;//AF_INET
+      unsigned short sin_port;//存储port
+      struct in_addr sin_addr;//参见struct in_addr
+      char sin_zero[8];//未使用
+   }
+   ```
+
+3. ```
+   struct in_addr{
+   unsigned long s_addr;//load with inet_pton()
+   };
+   ```
+
+4. `ssize_t sendto(int s, const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)`
+
+   参数分别表示：socket文件描述符、发送数据的首地址、发送数据的长度、0表示默认、存放目的主机ip地址和端口的信息、to 的长度。
+
+5. `ssize_t recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)`
+
+   参数分别表示：socket 文件描述符、接收数据的首地址、可接收数据的最大长度、0表示默认、存放发送方的ip地址和端口、from的长度。
+
+   这里“存放发送方的IP地址和端口号”部分非常重要，能很方便的存储通信地址信息。
+
+6. `int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen)`
+
+   参数分别表示：套接字描述符、指向特定协议地址结构的指针、地址结构的长度。
+
+### 3.4 服务器
+
+1. 使用socket函数建立监听socket，得到socket描述符；
+
+2. 使用bind函数将socket描述符与一个地址类型变量绑定
+
+3. 使用recvfrom函数等待获取来自客户端C1和C2的信息。接受到信息时要向对应客户端反馈成功信息；
+
+4. 使用sendto函数将C1和C2的IP和端口号分别转发给对方；
+
+5. 结束close(sock)。 
+
+### 3.5 客户端C1
+
+1. 使用socket函数建立套接字，得到socket描述符；
+
+2. 使用sendto函数与服务器建立联系，recvfrom函数接收来自服务器的success信息；
+
+3. 继续使用recvfrom函数等待接收来自服务器的信息，里面包含了C2客户端的IP和端口号；
+
+4. 尝试向C2客户端发送数据，由于C2客户端没有与C1客户端的连接记录，所以数据一定发不过去，但C1客户端将保留自己和C2客户端的通信记录；
+
+5. 等待C2客户端的主动连接，连接成功即打洞成功。
+
+### 3.6 客户端C2
+
+1. 使用socket函数建立套接字，得到socket描述符；
+
+2. 使用sendto函数与服务器建立联系，recvfrom函数接收来自服务器的success信息；
+
+3. 继续使用recvfrom函数等待接收来自服务器的信息，里面包含了C1客户端的ip和端口号；
+
+4. 直接向C1客户端发送数据，等待来自C1客户端的success信息；
+
+5. 成功接收success，即打洞成功。
+
+### 3.7 一些代码细节
+
+1. 服务器需要将C1和C2客户端的IP和端口转发给对方，同样，C1和C2客户端需要接收来自服务器的IP和端口信息。IP和端口信息是用netinet/in.h里的sockaddr_in结构体保存的，而sendto和recvfrom函数是对字符串进行发送接收的，因此可以才用变量类型强制转换的方式。设X为发送接收的一个sockaddr_in结构体，在sendto和recvfrom函数里强制转换为(char*)&X即可。结构体和字符串的互相转换可以保证结果无误。
+
+2. 实验过程中可能会遇到各种问题，define一个ERR_EXIT(message)用于出现错误时报错“message”信息。例如：在使用socket函数创建socket描述符时，若返回-1，则ERR_EXIT(“sock error”)。在报错里我们看到sock error即可快速定位是哪个函数出了问题。
+
+3. 服务器、客户端C1和C2各发送接收操作的具体执行步骤：
+
+   （1） 服务器等待C1客户端的尝试连接，成功后返回发送success；
+
+   （2） 服务器等待C2客户端的尝试连接，成功后返回发送success；
+
+   （3） 服务器向C1客户端发送C2客户端的IP和端口号，等待接收来自C1客户端的success反馈；
+
+   （4） 服务器向C2客户端发送C1客户端的IP和端口号，等待接收来自C2客户端的success反馈；
+
+   （5） C1客户端向C2客户端发送任意数据包，保留和C2客户端的连接记录，等待接收来自C2客户端的主动连接；
+
+   （6） C2客户端向C1客户端发送任意数据包，等待接收来自C1客户端的success信息；
+
+   （7） C1和C2客户端已成功建立连接，打洞结束。
+
+下面的测试部分将按照该步骤操作。
+
+ 
+
+## 第四章 测试
+
+### 4.1 实验硬件环境
+
+实验器材：笔记本电脑
+
+计算机配置： 
+
+设备名称  LAPTOP-C62KUAD9
+
+处理器 AMD Ryzen 7 5800H with Radeon Graphics  3.20 GHz
+
+系统类型  64 位操作系统, 基于 x64 的处理器
+
+CPU内存 16G
+
+### 4.2 UDP打洞客户端编程环境
+
+操作系统：Ubuntu 22.10虚拟机
+
+虚拟机配置：
+
+  内存 4GB
+
+  处理器内核总数 4
+
+  网络适配器 NAT模式，固定IP
+
+软件平台：
+
+  开发环境 Visual Studio Code
+
+  测试环境 Ubuntu 22.10
+
+### 4.2 UDP打洞服务器编程环境
+
+腾讯云轻量服务器：
+
+CPU -2核 内存 2GB
+
+操作系统：Ubuntu 22.04
+
+软件平台：
+
+  开发环境 vim
+
+### 4.3 测试页面展示
+
+ ![u4](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u4.png)
+
+注意，由于本次实验包含服务器、客户端C1和C2，每个都需要独立编程并运行，其中两个客户端是在虚拟机上运行的，开两个终端分屏展示：
+
+![u55](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u55.png)
+
+
+服务器位于云服务器上，单独一个终端页面：
+
+ 
+
+### 4.4 服务器打开测试
+
+服务器代码编译后，使用sudo ./指令执行代码：
+
+![u6](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u6.png)
+
+返回监听端口80，该端口是自己设置的，需要在云服务器里打开对应端口的防火墙。打印到终端方便测试。能看到监听端口，说明前面创建和绑定socket的部分没有问题。
+
+此时服务器应当进入等待C1和C2客户端主动来连接的部分，我们再去把C1和C2客户端打开。
+
+ 
+
+### 4.5 打开C1和C2客户端，向服务器通信测试
+
+ 
+
+由于服务器代码里，设计的是先监听来自C1客户端的主动连接，所以先打开C1客户端：
+
+![u77](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u77.png)
+
+
+
+可以看到C1客户端收到了来自服务器的接收成功的信息，此时再到服务器的终端页面检查一下：
+
+![u8](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u8.png)
+
+​	可以看到服务器收到了C1客户端的连接信息，并记录其IP地址和端口号，打印到终端页面里。至此，C1客户端已经将自己的通信地址信息交给服务器了，接下来是C2客户端
+
+ ![u9](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u9.png)
+
+​	对应的服务器反馈：
+
+![u10](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u10.png)
+
+​	在这里我们其实还可以看到端口变化仅为1，说明是递增性。当然实验环境并不是对称性NAT，无需考虑这些。
+
+​        C1和C2客户端都已经向服务器保留了自己的IP地址和端口号了，接下来服务器要向C1和C2客户端分别发送对方的IP地址和端口号。前往C1和C2的终端页面查看  
+
+ ![u11_](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u11_.png)
+
+​	可以看到C1和C2客户端都从服务器收到了对方的IP地址和端口号，与服务器终端页面里显示的做比较，得出信息交接无误。
+
+​	接下来C1和C2客户端要直接尝试互相通信。
+
+
+
+### 4.5 C1和C2客户端打洞测试
+
+​	代码设计为C1客户端先向C2客户端发送任意数据包，虽然C2客户端会丢弃数据包，但C1客户端会保留与C2客户端的通信记录。下面是C1客户端向C2客户端的初次尝试连接：
+
+ ![u12](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u12.png)
+
+​	其中cB是保存的C2客户端的sockaddr_in结构体，即C2客户端的IP地址和端口号。
+
+​	C1客户端发送数据后直接进入等待阶段，等待来自C2客户端的主动连接：  
+
+ ![u13](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u13.png)
+
+​	上面代码里使用while(1)循环来持续接收信息，若接收到信息就把信息打印出来，并向C2客户端反馈接收成功。
+
+​	C2客户端这边，由于C1客户端已经来打洞了，所以直接尝试连接C1客户端  :
+
+  ![u14](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u14.png)
+
+​	同样使用while(1)循环来持续向C1客户端发送数据及尝试接收来自C1客户端的success反馈。若成功收到，打印信息到终端。
+​	测试结果入下图
+
+![u15](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u15.png)
+
+C1和C2客户端的打洞成功，接下来测试直接通信。
+
+ 
+
+### 4.6 C1和C2客户端直接通信测试
+
+​	在C1客户端的终端里写下任意字符串，回车发送：
+
+![u16_](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u16_.png)
+
+​	接下来在C2客户端的终端里直接回车接收：
+
+![u17](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u17.png)
+
+可以看到C1和C2客户端可以直接通信，打洞成功。
+
+## 代码
+
+### 服务器：
+
+```c++
+//服务器
+//设计为A,B两个客户端把各自的信息（id,port）发给服务器，服务器再转发给对方
+//接着A向B通信，A处留下映射表，B再向A通信，成功打洞
+#include<bits/stdc++.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
+using namespace std;
+#define ERR_EXIT(message)do{ perror(message);exit(EXIT_FAILURE);}while(0)//用于报错
+#define PORT 80
+#define BUFF_SIZE 100
+
+struct sockaddr_in C[3];//用来保存C1,C2的info(ip和port)
+char SUCCESS[]="successful";
+
+//获取C[id]的ip和port
+void getInfoFromClient(int sock, int id){
+    char revBuff[BUFF_SIZE];
+    socklen_t sock_len=sizeof(C[id]);
+
+    //接收C[id]ip和port,方便获取信息
+    if(recvfrom(sock,revBuff,sizeof(revBuff),0,(struct sockaddr*)&C[id],&sock_len)==-1)ERR_EXIT("recv error");
+    cout<<"recv message From C"<<id<<" ip:"<<inet_ntoa(C[id].sin_addr)<<" port:"<<ntohs(C[id].sin_port)<<endl;
+
+    //发送接收成功的信息
+    sendto(sock,SUCCESS,sizeof(SUCCESS),0,(struct sockaddr*)&C[id],sock_len);
+    return;
+}
+
+//将C1,C2的信息发送给对方
+void sendInfoToClient(int sock){
+    socklen_t sock_len=sizeof(C[1]);
+    char buff[BUFF_SIZE];
+
+    //注意这里强制转化为char*
+    sendto(sock,(char *)&C[1],sizeof(buff),0,(struct sockaddr*)&C[2],sock_len);
+    sendto(sock,(char *)&C[2],sizeof(buff),0,(struct sockaddr*)&C[1],sock_len);
+
+}
+int main(){
+    struct sockaddr_in s;
+    int sock;
+
+    
+    //建立监听socket
+    if((sock=socket(AF_INET,SOCK_DGRAM,0))==-1)ERR_EXIT("socket error");
+    memset(&s,0,sizeof(s));
+    s.sin_family=AF_INET;
+    s.sin_port=htons(PORT);
+    s.sin_addr.s_addr=INADDR_ANY;
+   
+    socklen_t sock_len = sizeof(s);
+    
+    cout<<"监听端口："<<PORT<<endl;
+    //把socket描述符和一个地址类型变量绑定
+    if(bind(sock,(struct sockaddr*)&s,sock_len)==-1)ERR_EXIT("bind error");
+    
+
+    //获取C1,C2的信息
+    getInfoFromClient(sock,1);
+    getInfoFromClient(sock,2);
+
+    //将C1,C2的信息发送给对方
+    sendInfoToClient(sock);
+
+    close(sock);
+
+    return 0;
+}
+```
+
+***
+
+### 客户端C1
+
+```c++
+//客户端A
+#include<bits/stdc++.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
+using namespace std;
+#define ERR_EXIT(message)do{ perror(message);exit(EXIT_FAILURE);}while(0)
+#define SERVER_PORT 80
+#define PORT 8887
+#define BUFF_SIZE 100
+
+
+struct sockaddr_in cB;//客户端B的scokaddr_in
+struct sockaddr_in server;//服务器的sockaddr_in
+
+//向服务器发送自己的ip和port
+void sentInfoToServer(int sock,socklen_t sock_len){
+    char revBuff[BUFF_SIZE];
+    char sendBuff[BUFF_SIZE]="conects server";
+
+    //把自己的ip和port发送给服务器
+    sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&server,sock_len);
+
+    //接收服务器的反馈信息
+    if(recvfrom(sock,revBuff,sizeof(revBuff),0,(struct sockaddr*)&server,&sock_len)==-1)ERR_EXIT("recv1 error");
+    cout<<"recv message From server:"<<revBuff<<endl;
+
+    //接收服务器发来的客户端B的ip和port
+    if(recvfrom(sock,(char *)&cB,sizeof(cB),0,(struct sockaddr*)&server,&sock_len)==-1)ERR_EXIT("recv error");
+    cout<<"recv cB'info From S: ip:"<<inet_ntoa(cB.sin_addr)<<" port:"<<ntohs(cB.sin_port)<<endl;
+}
+//发送信息给客户端B
+void sentMessageToC(int sock,socklen_t sock_len){
+    char sendBuff[BUFF_SIZE]="hello cB";
+    char recvBuff[BUFF_SIZE];
+
+    //第一次尝试打洞，目的是给自己留下映射表以便接下来cB主动连接自己. 这里的cB会因为没有cA的映射表而丢弃cA的发送信息
+    sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cB,sock_len);
+
+   //等待cB的连接
+   while(1){
+        //如果成功接收到了，告诉cB一声
+        if(recvfrom(sock,recvBuff,sizeof(recvBuff),0,(struct sockaddr*)&cB,&sock_len)!=-1){
+            cout<<"recv cB's message:"<<recvBuff<<endl;
+            sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cB,sizeof(cB));
+            break;
+        }    
+   }
+
+   //打洞成功，可以通信
+   while(1){
+        memset(recvBuff,0,sizeof(recvBuff));
+        memset(sendBuff,0,sizeof(sendBuff));
+
+        //接收cB的连接
+        if(recvfrom(sock,recvBuff,sizeof(recvBuff),0,(struct sockaddr*)&cB,&sock_len)==-1)ERR_EXIT("recv error");
+        cout<<"recv message From cB:"<<recvBuff<<endl;
+
+        //向cB发送信息
+        if(fgets(sendBuff,sizeof(sendBuff),stdin)!=NULL)
+            sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cB,sock_len);
+   }
+   close(sock);
+}
+int main(){
+    int sock;
+    if((sock=socket(AF_INET,SOCK_DGRAM,0))==-1)ERR_EXIT("sock error");
+    memset(&server,0,sizeof(server));
+
+    server.sin_family=AF_INET;
+    server.sin_port=htons(SERVER_PORT);
+    server.sin_addr.s_addr=inet_addr("162.14.83.124");
+
+    socklen_t sock_len=sizeof(server);
+
+    sentInfoToServer(sock,sock_len);
+    sentMessageToC(sock,sock_len);
+
+    return 0;
+}
+```
+
+***
+
+### 客户端C2
+
+```c++
+//客户端B
+#include<bits/stdc++.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
+#include<unistd.h>
+using namespace std;
+#define ERR_EXIT(message)do{ perror(message);exit(EXIT_FAILURE);}while(0)
+#define SERVER_PORT 80
+#define PORT 8886
+#define BUFF_SIZE 100
+
+
+struct sockaddr_in cA;//客户端A的scokaddr_in
+struct sockaddr_in server;//服务器的sockaddr_in
+
+//向服务器发送自己的ip和port
+void sentInfoToServer(int sock,socklen_t sock_len){
+    char revBuff[BUFF_SIZE];
+    char sendBuff[BUFF_SIZE]="conects server";
+
+    //把自己的ip和port发送给服务器
+    sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&server,sock_len);
+
+    //接收服务器的反馈信息
+    if(recvfrom(sock,revBuff,sizeof(revBuff),0,(struct sockaddr*)&server,&sock_len)==-1)ERR_EXIT("recv1 error");
+    cout<<"recv message From server:"<<revBuff<<endl;
+
+    //接收服务器发来的客户端B的ip和port
+    if(recvfrom(sock,(char *)&cA,sizeof(cA),0,(struct sockaddr*)&server,&sock_len)==-1)ERR_EXIT("recv error");
+    cout<<"recv cA'info From S: ip:"<<inet_ntoa(cA.sin_addr)<<" port:"<<ntohs(cA.sin_port)<<endl;
+}
+
+//发送信息给客户端A
+void sentMessageToC(int sock, socklen_t sock_len){
+    char sendBuff[BUFF_SIZE]="hello cA";
+    char recvBuff[BUFF_SIZE];
+
+    //由于是cA先来连接，直接就可以发送信息给cA,cA应该有对应的映射表了
+   //尝试连接cA
+   sleep(5);//sleep一下，等待cA连接
+   while(1){
+        sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cA,sock_len);
+        //如果接收到cA的信息，说明cA已经连接上了
+        if(recvfrom(sock,recvBuff,sizeof(recvBuff),0,(struct sockaddr*)&cA,&sock_len)!=-1){
+            cout<<"cA is connected"<<endl;
+            break;
+        }
+   }
+
+   //正常通信
+   while(1){
+        memset(recvBuff,0,sizeof(recvBuff));
+        memset(sendBuff,0,sizeof(sendBuff));
+
+        //向cA发送信息
+        if(fgets(sendBuff,sizeof(sendBuff),stdin)!=NULL)
+            sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cA,sock_len);
+        
+        //接收cA的连接
+        if(recvfrom(sock,recvBuff,sizeof(recvBuff),0,(struct sockaddr*)&cA,&sock_len)==-1)ERR_EXIT("recv error");
+        cout<<"recv message From cA:"<<recvBuff<<endl;
+
+
+   }
+   close(sock);
+}
+int main(){
+    int sock;
+    if((sock=socket(AF_INET,SOCK_DGRAM,0))==-1)ERR_EXIT("sock error");
+    memset(&server,0,sizeof(server));
+
+    server.sin_family=AF_INET;
+    server.sin_port=htons(SERVER_PORT);
+    server.sin_addr.s_addr=inet_addr("162.14.83.124");
+
+    socklen_t sock_len=sizeof(server);
+
+    sentInfoToServer(sock,sock_len);
+    sentMessageToC(sock,sock_len);
+
+    return 0;
+}
+```
+

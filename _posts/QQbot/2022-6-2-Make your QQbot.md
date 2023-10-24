@@ -1,8 +1,8 @@
 ---
 title: "QQ机器人制作"
 date: 2022-6-2
-tags:
-  - QQ bot
+categories: [Recreation, Bot]
+tags: [qq, bot]
 ---
 
 简易QQ机器人制作

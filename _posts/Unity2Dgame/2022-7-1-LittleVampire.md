@@ -1,9 +1,8 @@
 ---
 title: "Little Vampire"
 date: 2022-7-1
-tags:
-  - C#
-  - Unity
+categories: [Recreation, Unity]
+tags: [C#, Unity]
 ---
 
 Unity制作2D小游戏

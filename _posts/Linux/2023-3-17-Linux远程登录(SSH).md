@@ -1,8 +1,8 @@
 ---
 title: "Linux远程登录(SSH"
 date: 2023-3-17
-tags:
-  - Linux
+categories: [Study, Linux]
+tags: [Linux]
 ---
 
 Xshell

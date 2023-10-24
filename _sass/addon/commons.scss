@@ -454,21 +454,21 @@ main {
     overflow: hidden;
     position: relative;
     background: var(--img-bg);
-    // &::before {
-    //     content: '';
-    //     position: absolute;
-    //     background: var(--shimmer-bg);
-    //     height: 100%;
-    //     width: 100%;
-    //     -webkit-animation: shimmer 1.3s infinite;
-    //     animation: shimmer 1.3s infinite;
-    // }
+    &::before {
+        content: '';
+        position: absolute;
+        background: var(--shimmer-bg);
+        height: 0;
+        width: 0;
+        -webkit-animation: shimmer 1.3s 0;
+        animation: shimmer 1.3s 0;
+    }
     @-webkit-keyframes shimmer {
         0% {
             transform: translateX(-100%);
         }
         100% {
-            transform: translateX(100%);
+            transform: translateX(-100%);
         }
     }
     @keyframes shimmer {
@@ -476,7 +476,7 @@ main {
             transform: translateX(-100%);
         }
         100% {
-            transform: translateX(100%);
+            transform: translateX(-100%);
         }
     }
 }

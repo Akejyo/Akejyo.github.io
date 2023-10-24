@@ -16,7 +16,7 @@ timezone: Asia/Shanghai
 
 title: Akejyo # the main title
 
-tagline: personal blog # it will display as the sub-title
+tagline: personal blog v2.0 # it will display as the sub-title
 
 description: >- # used by seo meta and the atom feed
   A minimal, responsive and feature-rich Jekyll theme for technical writing.
@@ -38,7 +38,7 @@ social:
   email: zsy3727@qq.com # change to your email address
   links:
     # The first element serves as the copyright owner's link
-    - https://twitter.com/Akejyo # change to your twitter homepage
+    # change to your twitter homepage
     - https://github.com/Akejyo # change to your github homepage
     # Uncomment below to add more social links
     # - https://www.facebook.com/username
@@ -70,10 +70,10 @@ theme_mode: # [light|dark]
 # will be added to all image (site avatar & posts' images) paths starting with '/'
 #
 # e.g. 'https://cdn.com'
-img_cdn: "https://chirpy-img.netlify.app"
+img_cdn: "https://raw.githubusercontent.com/Akejyo/imageForBlog/master"
 
 # the avatar on sidebar, support local or CORS resources
-avatar: "../assets/img/favicons/small_avator.png"
+avatar: "/small.png"
 
 # boolean type, the global switch for TOC in posts.
 toc: true

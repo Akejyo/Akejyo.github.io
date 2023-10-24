@@ -1,5 +1,5 @@
 ---
-title: "Linux远程登录(SSH"
+title: "Linux远程登录(SSH)"
 date: 2023-3-17
 categories: [Study, Linux]
 tags: [Linux]

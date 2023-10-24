@@ -3,6 +3,9 @@ title: "Little Vampire"
 date: 2022-7-1
 categories: [Recreation, Unity]
 tags: [C#, Unity]
+image:
+    path: /img/d15_1.png
+    alt: loading...
 ---
 
 Unity制作2D小游戏

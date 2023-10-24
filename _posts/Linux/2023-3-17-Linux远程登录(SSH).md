@@ -23,7 +23,7 @@ Xshell
    sudo systemctl status ssh
    ~~~
 
-<img :src="$withBase('/Linux/ssh1.png')" style="zoom:33%;" />
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/linux_i%20(22).png" alt="linux_i (22)" style="zoom:33%;" />
 
 3. 防火墙允许一下
 
@@ -34,7 +34,7 @@ Xshell
 4. `ifconfig` 查一下ip
 5. 打开Xshell，ssh 用户名@ip 远程连接
 
-<img :src="$withBase('/Linux/ssh2.png')">
+![linux_i (23)](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/linux_i%20(23).png)
 
 ***
 

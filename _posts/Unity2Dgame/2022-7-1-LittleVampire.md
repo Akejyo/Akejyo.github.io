@@ -203,7 +203,7 @@ namespace cftime
 
        对于跳跃动画，fall转idle需要判断是否落地，也就是判断Player的碰撞体下端碰到地图的碰撞体了，得先设置一下地图的碰撞体. 
 
-       地图Inspector里的Layer新建一个![d2_6](E:\_public\2d_1-7\d2_6.png)
+       地图Inspector里的Layer新建一个![d2_6](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/d2_6.png)
 
        Player的Script也要设置一下（上面的一个图里有），其余就是看代码。
 
@@ -766,7 +766,7 @@ public class Enemy_Frog : MonoBehaviour {
 
    分别是打开PauseMenu和关闭
 
-3. Canvas下新建Panel，里面不少东西![d5_5](E:\_public\2d_1-7\d5_5.png)
+3. Canvas下新建Panel，里面不少东西![d5_5](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/d5_5.png)
 
    出来这样的图：![d5_6](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/d5_6.png)
 
@@ -881,7 +881,7 @@ Build...
 
 素材，这里留点图吧：
 
-![d6_1](E:\_public\2d_1-7\d6_1.png)
+![d6_1](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/d6_1.png)
 
 ![t](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/t.png)
 

@@ -10,6 +10,11 @@ order: 4
   margin: 0;
   box-sizing: border-box;
 }
+:root {
+  --xlarge-size: 56px;
+  --checkd-color: #04C93F;
+  --box-shadow: 1px 3px 8px rgba(0, 0, 0, 0.2);
+}
 html, body {
   height: 100%;
   width: 100%;
@@ -21,6 +26,41 @@ body {
   background: radial-gradient(ellipse at bottom, #1C2837 0%, #050608 100%);
   background-attachment: fixed;
 }
+.avatar {
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 1px 3px 12px -4px var(--bg, rgba(255,255,255, 1));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--xlarge-size);
+  height: var(--xlarge-size);
+  font-size: var(--xlarge-size);
+  margin: 5px;
+  overflow: hidden;
+  transition: transform 0.3s ease-in-out;
+}
+.avatar-link {
+  display: inline-block;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+.avatar img:hover {
+  cursor: pointer;
+}
+.avatar:hover {
+  transform: scale(1.2);
+}
+
 h1 {
   font-weight: 300;
   font-size: 2.5em;
@@ -29,7 +69,7 @@ h1 {
   line-height: 1.6em;
   letter-spacing: 0.1em;
 }
-a, a:visited {
+/* a, a:visited {
   text-decoration: none;
   color: white;
   opacity: 0.7;
@@ -40,13 +80,13 @@ a:hover, a:visited:hover {
 a.icon, a:visited.icon {
   margin-right: 2px;
   padding: 3px;
-}
+} */
 .description {
   padding: 30px;
   position: absolute;
   top: 30%;
   left: 0;
-  width: 50%;
+  width: 70%;
   z-index: 999;
 }
 .description p {
@@ -313,7 +353,19 @@ code {
 }
 </style>
 
-
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const avatarImgs = document.querySelectorAll('.avatar img');
+  avatarImgs.forEach(img => {
+    img.addEventListener('click', () => {
+      const href = img.parentElement.previousElementSibling.getAttribute('href');
+      if (href) {
+        window.location.href = href;
+      }
+    });
+  });
+});
+</script>
 
 <h1>👾</h1>
 <div class="description">
@@ -331,6 +383,24 @@ code {
   <p class="author">
     The background solar system is made by Malik Dellidj
   </p>
+  <div>Links</div>
+  <div class="row">
+        <div class="avatar">
+          <a class="avatar-link" href="https://zzzremake.github.io/">
+            <img src="/img/zzzRemake.webp" alt="">
+          </a>
+        </div>
+        <div class="avatar">
+          <a class="avatar-link" href="https://www.cnblogs.com/IrisHyaline">
+            <img src="/img/IrisHyaline.jpg" alt="">
+          </a>
+        </div>
+        <div class="avatar">
+          <a class="avatar-link" href="https://peahawf.github.io/">
+            <img src="/img/peahawf.jpg" alt="">
+          </a>
+        </div>
+      </div>
 </div>
 <div class="solar-syst">
   <div class="sun"></div>

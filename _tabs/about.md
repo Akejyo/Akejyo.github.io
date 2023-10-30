@@ -400,6 +400,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <img src="/img/peahawf.jpg" alt="">
           </a>
         </div>
+        <div class="avatar">
+          <a class="avatar-link" href="https://www.cnblogs.com/imomi3/">
+            <img src="/img/imomi.jpg" alt="">
+          </a>
+        </div>
       </div>
 </div>
 <div class="solar-syst">

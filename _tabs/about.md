@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
     img.addEventListener('click', () => {
       const href = img.parentElement.previousElementSibling.getAttribute('href');
       if (href) {
-        window.location.href = href;
+        window.open(href, '_blank');
       }
     });
   });

@@ -16,7 +16,7 @@ timezone: Asia/Shanghai
 
 title: Akejyo # the main title
 
-tagline: personal blog v2.0 # it will display as the sub-title
+tagline: 乘物以游心 # it will display as the sub-title
 
 description: >- # used by seo meta and the atom feed
   A minimal, responsive and feature-rich Jekyll theme for technical writing.

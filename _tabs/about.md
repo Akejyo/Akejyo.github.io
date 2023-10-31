@@ -405,6 +405,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <img src="/img/imomi.jpg" alt="">
           </a>
         </div>
+        <div class="avatar">
+          <a class="avatar-link" href="https://be1happy.github.io/">
+            <img src="/img/be1happy.png" alt="">
+          </a>
+        </div>
       </div>
 </div>
 <div class="solar-syst">
@@ -420,4 +425,3 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="pluto"></div>
   <div class="asteroids-belt"></div>
 </div>
-

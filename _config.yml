@@ -73,13 +73,13 @@ theme_mode: dark # [light|dark]
 img_cdn: "https://raw.githubusercontent.com/Akejyo/imageForBlog/master"
 
 # the avatar on sidebar, support local or CORS resources
-avatar: "/small.png"
+avatar: "/assets/img/favicons/apple-touch-icon.png"
 
 # boolean type, the global switch for TOC in posts.
 toc: true
 
 comments:
-  active: 'giscus' # The global switch for posts comments, e.g., 'disqus'.  Keep it empty means disable
+  active: "giscus" # The global switch for posts comments, e.g., 'disqus'.  Keep it empty means disable
   # The active options are as follows:
   disqus:
     shortname: # fill with the Disqus shortname. › https://help.disqus.com/en/articles/1717111-what-s-a-shortname

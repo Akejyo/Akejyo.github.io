@@ -73,7 +73,7 @@ theme_mode: dark # [light|dark]
 img_cdn: "https://raw.githubusercontent.com/Akejyo/imageForBlog/master"
 
 # the avatar on sidebar, support local or CORS resources
-avatar: "/assets/img/favicons/apple-touch-icon.png"
+avatar: "/shan.jpg"
 
 # boolean type, the global switch for TOC in posts.
 toc: true

@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </a>
         </div>
         <div class="avatar">
-          <a class="avatar-link" href="https://www.cnblogs.com/imomi3/">
+          <a class="avatar-link" href="https://imomi263.github.io/">
             <img src="/img/imomi.jpg" alt="">
           </a>
         </div>

@@ -46,7 +46,7 @@ C#读入数据真的很不方便，对于一次输入很多数据，中间用空
 
 下面是1709B用C#写的屎山
 
-```
+```c#
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -154,7 +154,7 @@ namespace cftime
 
      首先要声明很多
 
-     ```
+     ```c#
        	public Rigidbody2D rb;//Player
          public Animator anim;//动画
          public Collider2D coll;//Player 碰撞体
@@ -169,7 +169,7 @@ namespace cftime
 
      下面是函数部分
 
-     ```
+     ```c#
      void Movement()
          {
              float horizontalmove = Input.GetAxis("Horizontal");//会获得-1~1的值
@@ -209,7 +209,7 @@ namespace cftime
 
        Player的Script也要设置一下（上面的一个图里有），其余就是看代码。
 
-     * ```
+     * ```c#
            void SwitchAnim()//切换动画这里结合Animator看
            {
                anim.SetBool("idle", false);
@@ -239,7 +239,7 @@ namespace cftime
 
 1. 普通的办法是：给Main Camera新建一个Script，在里面获取Plaer的transform并Update到Main Camera.
 
-   ```
+   ```c#
        public Transform player;
        void Update()
        {
@@ -261,7 +261,7 @@ namespace cftime
 
 3. 给物件添加Tag："Collection"，在Player Controller的脚本里添加函数.
 
-   ```
+   ```c#
        private void OnTriggerEnter2D(Collider2D collision)
        {
            if(collision.tag == "Collection")
@@ -284,7 +284,7 @@ namespace cftime
 
 3. 解决无限跳的问题：判定触地了才能跳.
 
-   ```
+   ```c#
       if (Input.GetButtonDown("Jump")  && coll.IsTouchingLayers(ground))
    ```
 
@@ -296,7 +296,7 @@ namespace cftime
 
 2. 按下S时把Player头部的碰撞体给取消掉，这样Player只有下面的碰撞体，可以穿过一格小的空间. 
 
-   ```
+   ```c#
            ...
            public Collider2D Crouchcoll;
            ...
@@ -322,7 +322,7 @@ namespace cftime
 
 3. 改一下脚本.
 
-   ```
+   ```c#
    ...
    public Text CherryNum;
    ...
@@ -370,7 +370,7 @@ namespace cftime
 
    * 首先得给青蛙弄个计时器. 
 
-     ```
+     ```c#
          public float times;
          public float clock = 3f;
      ```
@@ -395,7 +395,7 @@ namespace cftime
 
 2. Hurt要反弹一下，具体代码见下(就硬写三目运算🤣).
 
-   ```
+   ```c#
    if (!isHurt) {
    	rb.velocity = new Vector2(5 * (transform.position.x < collision.gameObject.transform.position.x ? -1 : 1), rb.velocity.y);
    	isHurt = true;
@@ -405,13 +405,13 @@ namespace cftime
 
 3. 因为Update()的问题，Hurt的动画可能会播不出来，在Update()里加个判断条件，不受伤的情况下才执行Movement().
 
-   ```
+   ```c#
    if(!isHurt) Movement();
    ```
 
 4. Hurt的刷新在SwitchAnim()里写.
 
-   ```
+   ```c#
            if (isHurt) {
                anim.SetBool("hurt", true);
                if(Mathf.Abs(rb.velocity.x) < 0.1f) {
@@ -432,17 +432,17 @@ namespace cftime
 
    * 新建脚本Enemy，这个Enemy要给其所有子类用，其Start()为protected virtual void Start()，virtual是为了子类也可以更改.
 
-     ```
+     ```c#
      protected virtual void Start() {anim = GetComponent<Animator>();}
      ```
 
    * 在Enemy里编写死亡动画部分，分两个
 
-     * ```
+     * ```c#
        void Death() { Destroy(gameObject);}//销毁物件
        ```
 
-     * ```
+     * ```c#
        public void JumpOn() { anim.SetTrigger("death");}//打开death的trigger
        ```
 
@@ -450,13 +450,13 @@ namespace cftime
 
      其class改为：
 
-     ```
+     ```c#
      public class Enemy_Frog : Enemy{...}// :是继承
      ```
 
      其Start()改为：
 
-     ```
+     ```c#
      protected override void Start(){
      	base.Start();//启动其父类的Start()
      	...
@@ -467,7 +467,7 @@ namespace cftime
 
      然后在Player的脚本里，敌人交互部分，获取碰撞的敌人：
 
-     ```
+     ```c#
      Enemy enemy = collision.gameObject.GetComponent<Enemy>();
      ```
 
@@ -487,7 +487,7 @@ namespace cftime
 
 2. 敌人爆炸：不要勾Play On Awake，打开Enemy脚本. 添加：
 
-   ```
+   ```c#
    ...
     protected AudioSource deathAudio;
    ...
@@ -513,7 +513,7 @@ namespace cftime
 
 #### 青蛙自动左右跳跃移动的码（没有继承Enemy的）：
 
-```
+```c#
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -594,7 +594,7 @@ public class Enemy_Frog : MonoBehaviour {
 
 2. 给门（hourse）新建碰撞体和脚本：
 
-   ```
+   ```c#
    ...
    public GameObject enterDialog;
    ...
@@ -625,7 +625,7 @@ public class Enemy_Frog : MonoBehaviour {
 
 2. 修改Player脚本.
 
-   ```
+   ```c#
    ...
    public Transform ceilingCheck;
    ...
@@ -643,7 +643,7 @@ public class Enemy_Frog : MonoBehaviour {
 
 2. 修改Player脚本.
 
-   ```
+   ```c#
    using UnityEngine.SceneManagement;
    ...
    private void OnTriggerEnter2D(Collider2D collision) {
@@ -664,7 +664,7 @@ public class Enemy_Frog : MonoBehaviour {
 
 1. 新建脚本.
 
-   ```
+   ```c#
    using UnityEngine.SceneManagement;
    ...
    void Update() {
@@ -698,7 +698,7 @@ public class Enemy_Frog : MonoBehaviour {
 
 1. 新建脚本Parallax，我们希望场景跟随相机的速度有倍率关系.
 
-   ```
+   ```c#
    public Transform Cam;
    public float moveRate;
    private float startPoint;
@@ -724,7 +724,7 @@ public class Enemy_Frog : MonoBehaviour {
 
 4. Menu新建脚本. 
 
-   ```
+   ```c#
    ...
    using UnityEngine.SceneManagement;
    ...
@@ -755,7 +755,7 @@ public class Enemy_Frog : MonoBehaviour {
 
 2. 方便起见直接继续在Menu的脚本里写. 加函数
 
-   ```
+   ```c#
        public void PauseGame() {
            pauseMenu.SetActive(true);
            Time.timeScale = 0f;//时间Scale变0
@@ -782,7 +782,7 @@ public class Enemy_Frog : MonoBehaviour {
 
 2. Menu里添加代码.
 
-   ```
+   ```c#
    using UnityEngine.Audio;
    ...
    public AudioMixer audioMixer;
@@ -822,7 +822,7 @@ public class Enemy_Frog : MonoBehaviour {
 
 2. 改了敌人碰撞部分，在Death()里加.
 
-   ```
+   ```c#
     GetComponent<Collider2D>().enabled = false;
    ```
 
@@ -834,7 +834,7 @@ public class Enemy_Frog : MonoBehaviour {
 
    * Cherry脚本里
 
-     ```
+     ```c#
         public void Death() {
              Destroy(gameObject);
              FindObjectOfType<PlayerController>().CherryCount();
@@ -843,7 +843,7 @@ public class Enemy_Frog : MonoBehaviour {
 
    * Player脚本里
 
-     ```
+     ```c#
      ...
      void FixedUpdate(){
      ...
@@ -979,7 +979,7 @@ Build...
 
 关于背包最开始也有一点BUG. 虽然我的背包可以永久存储信息，但我的背包UI再第二次打开游戏时是空的，也就是没有把inventory里的信息弄出来，背包存了个寂寞的信息. 我是给**inventoryManger**加了Start，让它一开始就遍历Bag把东西都加载出来，效果很好.
 
-```
+```c#
     ...
     private void Start() {
         for (int i = 0; i < instance.Bag.itemList.Count; i++)
@@ -992,7 +992,7 @@ Build...
 
 背包还有一个需要解决的问题， 反复切换场景，会发现之前吃掉的物品又被加载出来了. 我在看了各方教程后选择用字典来存储改物件是否被吃掉了，在加载场景时，如果发现该物件已经被收集，就直接Destory. 这部分我写在**itemOnWorld**(教程里叫slot好像吧)的Awake函数里
 
-```
+```c#
    ...
    private void Awake() {
         if (playerInventory.itemAvailabeDict[itemName]) {
@@ -1004,7 +1004,7 @@ Build...
 
 这里的playerInventory.itemAvailabeDict即使字典，在**inventory**里我们加上这个字典：
 
-```
+```c#
 ...
 public class inventory : ScriptableObject {
     public Dictionary<ItemName, bool> itemAvailabeDict = new Dictionary<ItemName, bool>();
@@ -1027,7 +1027,7 @@ Player吃掉物件时将其bool值改一下就行了.
 
 我不大想做那种带UI的，甚至有鼠标点击的翻柜子. 我做了个极其简单的. 到柜子附近按"E"就会将柜子下的子物件（即要放在柜子里的item）设置为active. 这里需要找到一个物件的子物件.
 
-```
+```c#
  ...//这里是Player的碰撞检测
  switch (collisionNow.tag) {
  ...
@@ -1079,7 +1079,7 @@ Player吃掉物件时将其bool值改一下就行了.
 
 最后找到了这一切的罪魁祸首
 
-```
+```c#
         yield return SceneManager.LoadSceneAsync(to, LoadSceneMode.Additive);
 ```
 

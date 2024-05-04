@@ -37,13 +37,13 @@ BV1aZ4y1f7e2是很好的教程，我自己摸索很久最后还是看了这个�
 
    你需要更改下面几项：
 
-   * ```
+   * ```python
      account: # 账号相关
        uin: 123456789 # QQ账号
        password: 'abcd1234' # 密码为空时使用扫码登录
      ```
 
-   * ```
+   * ```python
      # 反向WS设置
        - ws-reverse:
            # 反向WS Universal 地址

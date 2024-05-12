@@ -15,12 +15,14 @@ image:
 
 我的：[Arknights_particle_animation (akejyo.github.io)](https://akejyo.github.io/Arknights_partical_animation/)
 
-> 看到这个粒子效果，我第一反应是真实的物理模拟，然后我嗯写俩小时加速度写了个抽象玩意出来😎，洗澡的时候突然想明白了，好像可以简化一下
+> 看到这个粒子效果，我第一反应是真实的物理模拟，然后我嗯写俩小时加速度写了个抽象玩意出来😎，思路错的很。还好洗澡的时候想明白了（）
 
-第一步要做的是把图片转换成我们要操作的粒子图。我采用的办法是预设一个 `blockSize` 值作为块的大小，将原图的每 `blockSize*blockSize` 个像素转化成一个粒子：按这个块所有像素的 RGB 平均值来决定是否是一个粒子。
+### 图片转粒子图
+
+我采用的办法是预设一个 `blockSize` 值作为块的大小，将原图的每 `blockSize*blockSize` 个像素转化成一个粒子：按这个块所有像素的 RGB 平均值来决定是否是一个粒子。
 
 ```js
-img.onload = () => {
+function convertImageToParticles(img) {
     canvas.width = img.width;
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -56,6 +58,8 @@ img.onload = () => {
 
 ***
 
+### 粒子运动
+
 接下来最核心的问题：粒子与鼠标之间的斥力，以及粒子趋向复位受到的引力。
 
 粒子复位的速度是越来越慢的，可以用距离除上一个固定值来模拟；斥力直接用距离的反比例函数模拟。
@@ -88,7 +92,7 @@ img.onload = () => {
 
 ***
 
-一些小细节：
+### 添加少许细节
 
 1. 随机初始化粒子的的坐标，这样加载粒子图时粒子会四面八方聚集到正确位置，比较有观赏性；
 
@@ -125,3 +129,126 @@ img.onload = () => {
    }
    ```
 
+***
+
+> 2024/5/12 添加了多粒子图转换、图片跟随鼠标
+
+### 粒子图切换
+
+涉及到多个粒子图时，粒子图的转换我是这样搞的：
+
+* 先塞一个新图的粒子数组 `newParticles` ；
+
+* 打乱 `particles` 和 `newParticles`；
+
+* 已存在的粒子直接赋新值，粒子不够的 New 一个 `push` 进去：
+
+  ```js
+      shuffle(newParticles);
+      shuffle(particles);
+      for (var i = 0; i < newParticles.length; i++) {
+          if (i >= particleCount) {
+              particles.push(newParticles[i]);
+          } else {
+              particles[i].needed = true;
+              particles[i].originalX = newParticles[i].originalX;
+              particles[i].originalY = newParticles[i].originalY;
+          }
+      }
+      particleCount = newParticles.length;
+  ```
+
+  洗牌打乱：
+
+  ```js
+  function shuffle(arr) {
+      var currentIndex = arr.length,
+          randomIndex;
+      while (currentIndex != 0) {
+          randomIndex = Math.floor(Math.random() * currentIndex);
+          currentIndex--;
+          [arr[currentIndex], arr[randomIndex]] = [arr[randomIndex], arr[currentIndex]];
+      }
+      return arr;
+  }
+  ```
+
+* 多余的粒子设置其 `needed` 属性为 `false`，在画粒子的部分对这部分粒子特殊处理：速度归零、透明度逐渐下降，下降到 0 时踢掉该粒子。
+
+  ```js
+  Particle.prototype.disappear = function() {
+      ctx.fillStyle = `rgba(173, 216, 230, ${this.alphaNow -= 0.01})`;
+      ctx.fillRect(this.x, this.y, this.size, this.size);
+  }
+  ```
+
+  ```js
+          if (particle.needed) {
+              particle.update();
+              particle.draw();
+          } else {
+              particle.speedX = 0;
+              particle.speedY = 0;
+              particle.disappear();
+              if (particle.alphaNow <= 0) {
+                  particles.splice(particles.indexOf(particle), 1);
+              }
+          }
+  ```
+
+### 图片平滑跟随鼠标
+
+当鼠标移到列表时，对应的图片的会出现在鼠标下面，并平滑跟随鼠标。
+
+本来我是想利用下 CSS 的 transition 的，没弄出来，最大的问题在于鼠标坐标改变时 transition 的速度要平滑变化过去，不然会有卡顿感。最后还是上了 js。
+
+* 鼠标在 `list` 区域时，图片追着鼠标走，速度设置为与 $\sqrt{distance}$ 成正比；
+* 鼠标离开 `list` 区域时，记录离开的坐标点，当鼠标回到 `list` 区域时图片从记录点开始移动。
+
+```js
+var imgSpeedRatio = 0.7;
+var listItems = document.getElementsByClassName("listItem");
+var aniId;
+var imgX, imgY;
+var lastX, laxtY;
+
+function moveImg(img) {
+    var rect = img.getBoundingClientRect(); //get the position of the img
+    imgX = rect.left + img.width / 2;
+    imgY = rect.top + img.height / 2;
+    var distanceX = mouseX - imgX;
+    var distanceY = mouseY - imgY;
+    var distance = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2));
+
+    var speedX = distanceX / Math.sqrt(distance) * imgSpeedRatio;
+    var speedY = distanceY / Math.sqrt(distance) * imgSpeedRatio;
+
+    if (lastX != undefined && lastY != undefined && img.style.opacity == 0) {
+        img.style.left = (lastX - img.width / 2) + 'px';
+        img.style.top = (lastY - img.height / 2) + 'px';
+    } else {
+        img.style.left = (imgX + speedX - img.width / 2) + 'px';
+        img.style.top = (imgY + speedY - img.height / 2) + 'px';
+    }
+    aniId = requestAnimationFrame(() => moveImg(img));
+}
+
+for (let i = 0; i < listItems.length; i++) {
+    listItems[i].addEventListener('mousemove', () => {
+        var img = listItems[i].getElementsByTagName('img')[0];
+        img.style.opacity = 0.7;
+        lastX = mouseX;
+        lastY = mouseY;
+        if (aniId === undefined) { //init
+            for (let j = 0; j < listItems.length; j++) {
+                var img = listItems[j].getElementsByTagName('img')[0];
+                moveImg(img);
+            }
+        }
+    });
+    listItems[i].addEventListener('mouseleave', () => {
+        var img = listItems[i].getElementsByTagName('img')[0];
+        img.style.opacity = 0;
+    });
+}
+```

@@ -1,5 +1,5 @@
 ---
-title: What is KVCache
+title: What is KV Cache
 date: 2026-3-15
 categories: [Study, LLM]
 tags: [LLM, KVCache]

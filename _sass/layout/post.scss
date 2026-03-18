@@ -5,8 +5,7 @@
 @mixin btn-sharing-color($light-color, $important: false) {
     @if $important {
         color: var(--btn-share-color, $light-color) !important;
-    }
-    @else {
+    } @else {
         color: var(--btn-share-color, $light-color);
     }
 }
@@ -27,10 +26,12 @@ h1+.post-meta {
     >span+span::before {
         @include dot;
     }
+
     em,
     time {
         @extend %text-highlight;
     }
+
     em {
         a {
             color: inherit;
@@ -40,75 +41,96 @@ h1+.post-meta {
 
 .post-tail-wrapper {
     @extend %text-sm;
+
     margin-top: 6rem;
     border-bottom: 1px double var(--main-border-color);
+
     .license-wrapper {
         line-height: 1.2rem;
+
         >a {
             @extend %text-highlight;
+
             &:hover {
                 @extend %link-hover;
             }
         }
+
         span:last-child {
             @extend %text-sm;
         }
     }
+
     /* .license-wrapper */
     .post-meta a:not(:hover) {
         @extend %link-underline;
     }
+
     .share-wrapper {
         vertical-align: middle;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
+
         .share-icons {
             font-size: 1.2rem;
+
             >* {
                 margin-left: 0.25rem;
+
                 &:hover {
                     i {
                         @extend %btn-share-hovor;
                     }
                 }
             }
+
             button {
                 position: relative;
                 bottom: 2px;
                 padding: 0;
+
                 @extend %cursor-pointer;
             }
+
             a :hover {
                 text-decoration: none;
             }
+
             .fa-square-x-twitter {
                 @include btn-sharing-color(black);
             }
+
             .fa-facebook-square {
                 @include btn-sharing-color(rgb(66, 95, 156));
             }
+
             .fa-telegram {
                 @include btn-sharing-color(rgb(39, 159, 217));
             }
+
             .fa-linkedin {
                 @include btn-sharing-color(rgb(0, 119, 181));
             }
+
             .fa-weibo {
                 @include btn-sharing-color(rgb(229, 20, 43));
             }
         }
+
         /* .share-icons */
         .fas.fa-link {
             @include btn-sharing-color(rgb(171, 171, 171));
         }
     }
+
     /* .share-wrapper */
 }
 
 .post-tags {
     line-height: 2rem;
+
     .post-tag {
         &:hover {
             @extend %link-hover;
@@ -121,39 +143,48 @@ h1+.post-meta {
 .post-navigation {
     .btn {
         @extend %btn-post-nav;
+
         &:not(:hover) {
             color: var(--link-color);
         }
+
         &:hover {
             &:not(.disabled)::before {
                 color: whitesmoke;
             }
         }
+
         &.disabled {
             @extend %btn-post-nav;
+
             pointer-events: auto;
             cursor: not-allowed;
             background: none;
             color: gray;
         }
+
         &.btn-outline-primary.disabled:focus {
             box-shadow: none;
         }
+
         &::before {
             color: var(--text-muted-color);
             font-size: 0.65rem;
             text-transform: uppercase;
             content: attr(aria-label);
         }
+
         &:first-child {
             border-radius: $base-radius 0 0 $base-radius;
             left: 0.5px;
         }
+
         &:last-child {
             border-radius: 0 $base-radius $base-radius 0;
             right: 0.5px;
         }
     }
+
     p {
         font-size: 1.1rem;
         line-height: 1.5rem;
@@ -180,6 +211,7 @@ h1+.post-meta {
         position: relative;
         top: 2rem;
     }
+
     to {
         opacity: 1;
         position: relative;
@@ -193,6 +225,7 @@ h1+.post-meta {
         position: relative;
         top: 2rem;
     }
+
     to {
         opacity: 1;
         position: relative;
@@ -208,36 +241,44 @@ h1+.post-meta {
     transition: top 0.2s ease-in-out;
     -webkit-animation: fade-up 0.8s;
     animation: fade-up 0.8s;
+
     ul {
         list-style: none;
         font-size: 0.85rem;
         line-height: 1.25;
         padding-left: 0;
+
         li {
             &:not(:last-child) {
                 margin: 0.4rem 0;
             }
+
             a {
                 padding: 0.2rem 0 0.2rem 1.25rem;
             }
         }
+
         /* Overwrite TOC plugin style */
         .toc-link {
             display: block;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+
             &:hover {
                 color: var(--toc-highlight);
                 text-decoration: none;
             }
+
             &::before {
                 display: none;
             }
         }
+
         .is-active-link {
             color: var(--toc-highlight) !important;
             font-weight: 600;
+
             &::before {
                 display: inline-block;
                 width: 1px;
@@ -246,6 +287,7 @@ h1+.post-meta {
                 background-color: var(--toc-highlight) !important;
             }
         }
+
         ul {
             padding-left: 0.75rem;
         }
@@ -259,11 +301,14 @@ h1+.post-meta {
     >h3 {
         @include label(1.1rem, 600);
     }
+
     time {
         @extend %normal-font-style;
         @extend %text-xs;
+
         color: var(--text-muted-color);
     }
+
     p {
         font-size: 0.9rem;
         margin-bottom: 0.5rem;
@@ -273,6 +318,7 @@ h1+.post-meta {
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
     }
+
     .card {
         h4 {
             @extend %text-clip;
@@ -297,6 +343,7 @@ h1+.post-meta {
 
 .share-label {
     @include label(inherit, 400, inherit);
+
     &::after {
         content: ':';
     }
@@ -305,6 +352,7 @@ h1+.post-meta {
 @media all and (max-width: 576px) {
     .post-tail-bottom {
         flex-wrap: wrap-reverse !important;
+
         >div:first-child {
             width: 100%;
             margin-top: 1rem;

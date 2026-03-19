@@ -60,7 +60,7 @@ Here are something notable:
 
 #### Prove that $x$ sampled in this way indeed $x\sim p(x)$
 
-todo: see A.1
+See [Appendix](#Appendix)
 
 ### Analysis
 
@@ -137,4 +137,42 @@ The optimal $\gamma$ should be the one maximizing the walltime improvement equat
 > This $\gamma$ can be modified dynamically according to the value of $\beta$
 
 <img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20260318165133616.png" alt="image-20260318165133616" style="zoom:50%;" />
+
+### Appendix
+
+To understand this proof, you need first read the Corollary in Calculate $\alpha$ about $\beta$.
+
+First we have $p'(x)=norm(max(0,p(x)-q(x)))=\frac{p(x)-min(q(x),p(x))}{\sum_{x'}(p(x')-min(q(x'),p(x')))}=\frac{p(x)-min(q(x),p(x))}{1-\beta}$
+
+Now:
+
+
+$$
+P(x=x')=P(guess\ accepted,x=x')+P(guess\ rejected,x=x')
+$$
+
+
+Where:
+
+
+$$
+P(guess\ accepted,x=x')=q(x')min(1,\frac{p(x')}{q(x')})=min(q(x'),p(x'))
+$$
+
+
+And:
+
+
+$$
+P(guess\ rejected,x=x')=p'(x')(1-\beta)=p(x')-min(q(x'),p(x'))
+$$
+
+
+Overall:
+
+
+$$
+P(x=x')=p(x')
+$$
+
 

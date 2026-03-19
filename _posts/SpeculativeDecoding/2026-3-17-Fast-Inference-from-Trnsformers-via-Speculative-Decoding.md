@@ -60,7 +60,7 @@ Here are something notable:
 
 #### Prove that $x$ sampled in this way indeed $x\sim p(x)$
 
-See [Appendix](#Appendix)
+See [Appendix](#appendix)
 
 ### Analysis
 
@@ -174,5 +174,4 @@ Overall:
 $$
 P(x=x')=p(x')
 $$
-
 

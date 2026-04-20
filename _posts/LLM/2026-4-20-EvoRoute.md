@@ -36,7 +36,7 @@ $$
 * $\phi:\mathcal{I}\rightarrow\mathcal{L}$
 * $\mathcal{S}$ : system state, typically implemented as a shared memory or scratchpad
 * $\mathcal{T}$: a set of external tools, such as code interpreters or web search APIs
-* $\mathcal{A}$: the full action space, including both natural language actions and tool invocations, formally $$\mathcal{A}=\mathcal{A}_{lang}\cup\{\text{use\_tool}(T,args)\mid T\in\mathcal{T}\}$$
+* $\mathcal{A}$: the full action space, including both natural language actions and tool invocations, formally $\mathcal{A}=\mathcal{A}_{lang}\cup\{\text{use\_tool}(T,args)\mid T\in\mathcal{T}\}$
 * $$\Psi\{s_{t+1}\mid s_t,a_t\}$$ governs the transition dynamics of the system
 * $\mu(t)\in\mathcal{I}$ selects the active agent at each time step $t$
 
@@ -108,7 +108,7 @@ When a new step arrives, EvoRoute retrieves relevant historical records from $\m
    $\text{PredictTools}(\cdot)$ uses a two-stage predictor:
 
    * Keyword heuristic
-     * Using a predefined dictionary to map explicit trigger keywords(e.g., "search" for $\text{web\_search}$; "run", "plot" for $\text{code}\_\text{interpreter}$)
+     * Using a predefined dictionary to map explicit trigger keywords(e.g., "search" for $\text{web\_search}$; "run", "plot" for $\text{code\_interpreter}$)
    * Cheap LLM fallback
      - if heuristics fail, use Qwen3-14B in zero-shot mode
 
@@ -142,18 +142,19 @@ If EvoRoute always picked the current best average, it would become too greedy a
 
 It assumes each metric follows a Normal distribution and models the uncertainty over its mean and variance using a Normal-Inverse-Gamma conjugate prior.
 
-First, compute the sample statistics for each metric $$m \in \{\mathbb{P},\mathbb{C},\mathbb{D}\}$$: the count $n_l$, the sample mean $\overline{x}_{m,l}$ and the sample variance $s^2_{m,l}$. These statistics are used to parameterize the NIG posteriors, NIG($\mu_{m,l},v_{m,l},\alpha_{m,l},\beta_{m,l}$), where $\mu_{m,l}=\overline{x}_{m,l}$, $v_{m,l}=n_l$, $\alpha_{m,l}=n_l/2$, and $\beta_{m,l}=(n_l-1)s^2_{m,l}/2$
+First, compute the sample statistics for each metric $$m \in \{\mathbb{P},\mathbb{C},\mathbb{D}\}$$: the count $n_l$, the sample mean $\overline{x}_{m,l}$ and the sample variance $s^2_{m,l}$. These statistics are used to parameterize the NIG posteriors, NIG($$\mu_{m,l},v_{m,l},\alpha_{m,l},\beta_{m,l}$$), where $$\mu_{m,l}=\overline{x}_{m,l}$$, $v_{m,l}=n_l$, $$\alpha_{m,l}=n_l/2$$, and $$\beta_{m,l}=(n_l-1)s^2_{m,l}/2$$
 
 At decision time, it samples a stochastic utility:
 
 $$
 U'(l) = w_p \cdot \tilde{x}_{P,l} - w_c \cdot \tilde{x}_{C,l} - w_d \cdot \tilde{x}_{D,l}
 $$
-and selects:
 
+and selects:
 $$
 l^* = \arg\max_{l \in \mathcal{L}_{\text{pareto}}} (U'(l)),
 $$
+
 where $(w_p,w_c,w_d)$ reflect the desired trilemma trade-off ($w_p=1.0$, $w_c=0.1$, $w_d=0.05$)
 
 > Crucially, this selection is not the end of the process. Once the agent powered by $l^∗$ completes its action, the observed outcome is logged back into the knowledge base $\mathcal{K}$. This closes the feedback loop, ensuring that every decision and its outcome contribute to the system’s ever-improving wisdom, thereby realizing the self-evolving nature of EvoRoute.

@@ -142,7 +142,7 @@ If EvoRoute always picked the current best average, it would become too greedy a
 
 It assumes each metric follows a Normal distribution and models the uncertainty over its mean and variance using a Normal-Inverse-Gamma conjugate prior.
 
-First, compute the sample statistics for each metric $$m \in \{\mathbb{P},\mathbb{C},\mathbb{D}\}$$: the count $n_l$, the sample mean $\overline{x}_{m,l}$ and the sample variance $s^2_{m,l}$. These statistics are used to parameterize the NIG posteriors, NIG($$\mu_{m,l},v_{m,l},\alpha_{m,l},\beta_{m,l}$$), where $$\mu_{m,l}=\overline{x}_{m,l}$$, $v_{m,l}=n_l$, $$\alpha_{m,l}=n_l/2$$, and $$\beta_{m,l}=(n_l-1)s^2_{m,l}/2$$
+First, compute the sample statistics for each metric \(m \in \{\mathbb{P},\mathbb{C},\mathbb{D}\}\): the count \(n_l\), the sample mean \(\overline{x}_{m,l}\) and the sample variance \(s_{m,l}^2\). These statistics are used to parameterize the NIG posteriors, \(\operatorname{NIG}(\mu_{m,l}, v_{m,l}, \alpha_{m,l}, \beta_{m,l})\), where \(\mu_{m,l} = \overline{x}_{m,l}\), \(v_{m,l} = n_l\), \(\alpha_{m,l} = n_l/2\), and \(\beta_{m,l} = (n_l-1)s_{m,l}^2/2\).
 
 At decision time, it samples a stochastic utility:
 

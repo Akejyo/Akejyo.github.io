@@ -31,13 +31,13 @@ $$
 $$
 
 * $\mathcal{M}$: the designed complex agentic AI system
-* $\mathcal{I} = \{1,2,...,N\}$: the set of agent roles ($e.g.$, web-browser, coder)
+* $$\mathcal{I} = \{1,2,...,N\}$$: the set of agent roles ($e.g.$, web-browser, coder)
 * $\mathcal{L}$: the pool of available LLM backbones
 * $\phi:\mathcal{I}\rightarrow\mathcal{L}$
 * $\mathcal{S}$ : system state, typically implemented as a shared memory or scratchpad
 * $\mathcal{T}$: a set of external tools, such as code interpreters or web search APIs
-* $\mathcal{A}$: the full action space, including both natural language actions and tool invocations, formally $\mathcal{A}=\mathcal{A}_{lang}\cup\{\text{use\_tool}(T,args)\mid T\in\mathcal{T}\}$
-* $\Psi\{s_{t+1}\mid s_t,a_t\}$ governs the transition dynamics of the system
+* $\mathcal{A}$: the full action space, including both natural language actions and tool invocations, formally $$\mathcal{A}=\mathcal{A}_{lang}\cup\{\text{use\_tool}(T,args)\mid T\in\mathcal{T}\}$$
+* $$\Psi\{s_{t+1}\mid s_t,a_t\}$$ governs the transition dynamics of the system
 * $\mu(t)\in\mathcal{I}$ selects the active agent at each time step $t$
 
 ### Objective Formulation
@@ -61,6 +61,7 @@ The backbone of EvoRoute is an evolving knowledge base $\mathcal{K}$ built from 
 $$
 \mathcal{R_t} = \langle i_t, l_t, q_t, e_t, T_t, c_t, d_t, \sigma_t, \mathbb{P}(\tau) \rangle,
 $$
+
 Each record stores:
 
 - $i_t$: active agent role,
@@ -103,6 +104,7 @@ When a new step arrives, EvoRoute retrieves relevant historical records from $\m
    $$
    \mathcal{K}_{\text{tool}} = \{\mathcal{R}_t \in \mathcal{K} \mid T_t \cap \text{PredictTools}(q_{t'}) \neq \emptyset\}.
    $$
+
    $\text{PredictTools}(\cdot)$ uses a two-stage predictor:
 
    * Keyword heuristic
@@ -123,6 +125,7 @@ From the retrieved records, EvoRoute extracts candidate models:
 $$
 \mathcal{L}_{\text{cand}}=\{l_t\mid\mathcal{R}_t\in\mathcal{K}_{\text{cand}}\}
 $$
+
 For each candidate model $l\in\mathcal{L}_{\text{land}}$, it estimates:
 
 * average performance $\hat{P}(l)$
@@ -139,7 +142,7 @@ If EvoRoute always picked the current best average, it would become too greedy a
 
 It assumes each metric follows a Normal distribution and models the uncertainty over its mean and variance using a Normal-Inverse-Gamma conjugate prior.
 
-First, compute the sample statistics for each metric $m \in \{\mathbb{P},\mathbb{C},\mathbb{D}\}$: the count $n_l$, the sample mean $\overline{x}_{m,l}$ and the sample variance $s^2_{m,l}$. These statistics are used to parameterize the NIG posteriors, NIG($\mu_{m,l},v_{m,l},\alpha_{m,l},\beta_{m,l}$), where $\mu_{m,l}=\overline{x}_{m,l}$, $v_{m,l}=n_l$, $\alpha_{m,l}=n_l/2$, and $\beta_{m,l}=(n_l-1)s^2_{m,l}/2$
+First, compute the sample statistics for each metric $$m \in \{\mathbb{P},\mathbb{C},\mathbb{D}\}$$: the count $n_l$, the sample mean $\overline{x}_{m,l}$ and the sample variance $s^2_{m,l}$. These statistics are used to parameterize the NIG posteriors, NIG($\mu_{m,l},v_{m,l},\alpha_{m,l},\beta_{m,l}$), where $\mu_{m,l}=\overline{x}_{m,l}$, $v_{m,l}=n_l$, $\alpha_{m,l}=n_l/2$, and $\beta_{m,l}=(n_l-1)s^2_{m,l}/2$
 
 At decision time, it samples a stochastic utility:
 

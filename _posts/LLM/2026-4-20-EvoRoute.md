@@ -57,6 +57,7 @@ $$
 #### Step-level experience base
 
 The backbone of EvoRoute is an evolving knowledge base $\mathcal{K}$ built from prior executions. After a task finishes, the full trajectory is split into **step-level records**:
+
 $$
 \mathcal{R_t} = \langle i_t, l_t, q_t, e_t, T_t, c_t, d_t, \sigma_t, \mathbb{P}(\tau) \rangle,
 $$
@@ -73,6 +74,7 @@ Each record stores:
 - $\mathbb{P}(\tau)$: final task-level success signal.
 
 After each run:
+
 $$
 \mathcal{K}\leftarrow\mathcal{K}\cup\{\mathcal{R}_t\}^{T-1}_{t=0}
 $$
@@ -81,12 +83,14 @@ $$
 
 When a new step arrives, EvoRoute retrieves relevant historical records from $\mathcal{K}$. Instead of relying on one notion of similarity, it uses **three**.
 
-1) Agent Role Match
+1. Agent Role Match
+   
    $$
    \mathcal{K}_{\text{agent}}=\{\mathcal{R}_t\in\mathcal{K}\mid i_t=i_{t'}\}
    $$
 
-2) Semantic Similarity Retrieval
+2. Semantic Similarity Retrieval
+   
    $$
    \mathcal{K}_{\text{sem}} = \{\mathcal{R}_t \in \mathcal{K} \mid \text{sim}(\text{Embed}(q_{t'}), e_t) \geq \theta_{\text{sim}}\}
    $$
@@ -94,7 +98,8 @@ When a new step arrives, EvoRoute retrieves relevant historical records from $\m
    * $\text{Embed}(\cdot)$ is implemented via **MiniLM**
    * $\theta_{\text{sim}}=0.85$
 
-3) Tool Congruence Retrieval
+3. Tool Congruence Retrieval
+   
    $$
    \mathcal{K}_{\text{tool}} = \{\mathcal{R}_t \in \mathcal{K} \mid T_t \cap \text{PredictTools}(q_{t'}) \neq \emptyset\}.
    $$
@@ -106,6 +111,7 @@ When a new step arrives, EvoRoute retrieves relevant historical records from $\m
      - if heuristics fail, use Qwen3-14B in zero-shot mode
 
 The final candidate set:
+
 $$
 \mathcal{K}_{\text{cand}}=\mathcal{K}_{\text{agent}}\cup\mathcal{K}_{\text{sem}}\cup\mathcal{K}_{\text{tool}}
 $$
@@ -113,6 +119,7 @@ $$
 #### Pareto-Optimal Filtration and Selection
 
 From the retrieved records, EvoRoute extracts candidate models:
+
 $$
 \mathcal{L}_{\text{cand}}=\{l_t\mid\mathcal{R}_t\in\mathcal{K}_{\text{cand}}\}
 $$
@@ -132,13 +139,15 @@ If EvoRoute always picked the current best average, it would become too greedy a
 
 It assumes each metric follows a Normal distribution and models the uncertainty over its mean and variance using a Normal-Inverse-Gamma conjugate prior.
 
-First, compute the sample statistics for each metric $m\in\{\mathbb{P},\mathbb{C},\mathbb{D}\}$: the count $n_l$, the sample mean $\overline{x}_{m,l}$ and the sample variance $s^2_{m,l}$. These statistics are used to parameterize the NIG posteriors, NIG($\mu_{m,l},v_{m,l},\alpha_{m,l},\beta_{m,l}$), where $\mu_{m,l}=\overline{x}_{m,l}$, $v_{m,l}=n_l$, $\alpha_{m,l}=n_l/2$, and $\beta_{m,l}=(n_l-1)s^2_{m,l}/2$
+First, compute the sample statistics for each metric $m \in \{\mathbb{P},\mathbb{C},\mathbb{D}\}$: the count $n_l$, the sample mean $\overline{x}_{m,l}$ and the sample variance $s^2_{m,l}$. These statistics are used to parameterize the NIG posteriors, NIG($\mu_{m,l},v_{m,l},\alpha_{m,l},\beta_{m,l}$), where $\mu_{m,l}=\overline{x}_{m,l}$, $v_{m,l}=n_l$, $\alpha_{m,l}=n_l/2$, and $\beta_{m,l}=(n_l-1)s^2_{m,l}/2$
 
 At decision time, it samples a stochastic utility:
+
 $$
 U'(l) = w_p \cdot \tilde{x}_{P,l} - w_c \cdot \tilde{x}_{C,l} - w_d \cdot \tilde{x}_{D,l}
 $$
 and selects:
+
 $$
 l^* = \arg\max_{l \in \mathcal{L}_{\text{pareto}}} (U'(l)),
 $$

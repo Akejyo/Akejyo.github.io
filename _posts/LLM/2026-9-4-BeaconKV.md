@@ -1,8 +1,8 @@
 ---
 title: "[Note] BeaconKV: Key-Value Cache Compression Guided by Beacon Queries for Efficient Large Reasoning Model Inference"
 date: 2026-9-4
-categories: [Study, LLM]
-tags: [LLM, KVCache]
+categories: [PaperNote, LLM]
+tags: [KVCache]
 math: true
 image:
   path: /img/image-20260904221551713.png

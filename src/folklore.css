@@ -1,0 +1,103 @@
+/* An additive material layer. Typography, reading columns, and route layouts
+   continue to come from styles.css and blog.css. No motion is introduced. */
+.blog {
+  --texture-paper-opacity: .018;
+  --texture-weave-opacity: .03;
+  --texture-snow-opacity: .025;
+  --thread-navy: var(--accent-blue);
+  --thread-crimson: var(--accent-red);
+  --thread-linen: var(--accent-beige);
+  --thread-snow: var(--background-primary);
+  position: relative;
+  isolation: isolate;
+}
+
+/* Grain sits behind the text; it never intercepts pointer or keyboard input. */
+.blog::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url('/assets/paper-grain.svg') repeat;
+  opacity: var(--texture-paper-opacity);
+  pointer-events: none;
+}
+.blog .field-hero { background: #e9eef0; }
+.hero-environment { object-position: center 55%; }
+.field-hero::after {
+  background: linear-gradient(90deg, rgba(247,248,248,.96) 0%, rgba(247,248,248,.88) 25%, rgba(247,248,248,.56) 47%, rgba(247,248,248,.05) 72%);
+}
+.field-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url('/assets/snow-grain.svg') repeat;
+  opacity: var(--texture-snow-opacity);
+  pointer-events: none;
+}
+.hero-bottom > span:last-child { background: rgba(247,248,248,.86); }
+
+.textile-band { display: block; height: auto; max-width: 100%; overflow: visible; }
+.textile-band path { stroke-width: 1.2; stroke-linejoin: miter; }
+.thread-navy { stroke: var(--thread-navy); }
+.thread-beige { stroke: var(--thread-linen); }
+.thread-red { stroke: var(--thread-crimson); }
+.thread-white { fill: var(--thread-snow); }
+.thread-fill { fill: var(--thread-navy); stroke: none; }
+
+/* One woven interruption on the home page, not a patterned border system. */
+.current-expedition { position: relative; }
+.section-thread {
+  position: absolute;
+  top: -8px;
+  left: 0;
+  width: 112px;
+  height: 16px;
+  background: var(--background-primary);
+}
+.section-symbol { width: 11px; height: 11px; margin-right: 8px; vertical-align: -1px; color: var(--accent-blue); }
+.metadata-symbol { width: 12px; height: 12px; align-self: center; color: var(--accent-blue); margin-right: 1px; }
+.record-meta > .metadata-symbol + span { color: var(--accent-blue); }
+.nav-symbol { position: absolute; right: -17px; top: 50%; margin-top: -17px; color: var(--accent-blue); }
+
+/* A little material only on the already-existing image surfaces. */
+.expedition-image { position: relative; }
+.expedition-image::after {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 12px;
+  width: 2px;
+  height: 28px;
+  background: var(--accent-beige);
+  border-top: 9px solid var(--accent-red);
+  border-bottom: 9px solid var(--accent-blue);
+  pointer-events: none;
+}
+.about-pattern .textile-band { width: 224px; height: 32px; margin: 25px auto; }
+
+.blog-footer { position: relative; isolation: isolate; }
+.blog-footer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url('/assets/woven-grain.svg') repeat;
+  opacity: var(--texture-weave-opacity);
+  pointer-events: none;
+}
+.footer-thread { position: absolute; top: -5px; left: var(--page-gutter); width: 64px; height: 10px; background: var(--background-primary); }
+.footprint-trail { position: absolute; width: 25px; height: 42px; bottom: 12px; right: 24px; color: var(--accent-blue); opacity: .13; pointer-events: none; }
+
+@media(max-width:760px) {
+  .hero-environment { object-position: 66% center; }
+  .field-hero::after { background: linear-gradient(90deg, rgba(247,248,248,.95), rgba(247,248,248,.85) 45%, rgba(247,248,248,.33)); }
+  .nav-symbol { right: auto; top: 50%; margin-top: -6px; margin-left: 8px; }
+  .footprint-trail { right: var(--page-gutter); bottom: 28px; }
+}
+@media print {
+  .blog::before, .field-hero::before, .section-thread,
+  .expedition-image::after,
+  .section-symbol, .metadata-symbol { display: none; }
+}

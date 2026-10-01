@@ -1,0 +1,129 @@
+/* Environmental states never target reading content or navigation. */
+.story-sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap; }
+.environment-memory { position:fixed;left:0;bottom:-12px;width:100%;height:120px;background:linear-gradient(#e7edef33,#e7edefbb),url('/assets/arctic-frontier.png') center 76%/cover;opacity:.025;pointer-events:none;z-index:-1;view-transition-name:environment-memory; }
+.void-page .environment-memory { background-image:linear-gradient(#111c2766,#111c27aa),url('/assets/arctic-frontier.png'); }
+html[data-linger-departure="true"] .environment-memory { opacity:.5; }
+.cresson-control { display:block;padding:0;border:0;background:none;color:inherit;cursor:pointer;border-radius:0; }
+.cresson-control:focus-visible { outline:2px solid var(--accent-blue);outline-offset:7px; }
+.cresson-control > svg { width:48px;height:48px; }
+.cresson-control.is-listening .cresson-heart { fill:var(--accent-red);fill-opacity:.48; }
+
+.blog main.story-404 { position:relative;isolation:isolate;min-height:78vh;overflow:hidden; }
+.snow-field-art { position:absolute;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none; }
+.story-404 .snow-field-art { margin:0; }
+.story-404::before { content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(247,248,248,.9),rgba(247,248,248,.6) 60%,transparent); }
+.story-404 .error-number { margin-bottom:25px; }
+.story-404 h1 { margin:0; }
+.story-404 .uncertain-footprints { position:absolute;right:12%;bottom:2%;height:52%;width:auto;opacity:.14;color:var(--accent-blue);margin:0;pointer-events:none; }
+.void-page { margin:0;background:#111c27;color:#cad3da;min-height:100svh; }
+.void-main { min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:36px;position:relative;isolation:isolate;overflow:hidden;padding:40px 24px; }
+.void-main::before { content:'';position:absolute;inset:-2px;z-index:-1;background:linear-gradient(#111c27ee,#111c27cc),url('/assets/arctic-frontier.png') center/cover; }
+.void-main p { font:16px/1.9 var(--font-serif);text-align:center;margin:0; }
+.void-page .cresson-eye { fill:#18232e; }
+.void-page .cresson-void { fill:#090f16; }
+.void-page .cresson-control:focus-visible { outline-color:#8ca9bb; }
+.void-main .uncertain-footprints { position:absolute;height:25vh;width:auto;bottom:2%;left:15%;color:#bccbd3;opacity:.055;pointer-events:none; }
+[data-collapse-level="1"] :is(.current-expedition,.blog-footer) .textile-band,
+[data-collapse-level="1"] .about-pattern .collapse-repeated { mask-image:linear-gradient(90deg,#000 0 42%,transparent 42% 49%,#000 49% 74%,transparent 74% 78%,#000 78%); }
+[data-collapse-level="1"] .collapse-selvedge { transform:translateX(var(--level-line-shift,4px)); }
+[data-collapse-level="1"] .cresson-heart { fill:var(--accent-red);fill-opacity:.9; }
+[data-collapse-level="1"] .cresson-inner { fill:var(--collapse-purple);fill-opacity:.7; }
+[data-collapse-level="1"] .cresson-outer { fill:#70404c;fill-opacity:.68; }
+[data-collapse-level="1"] .hero-environment,
+[data-collapse-level="1"] .snow-field-art,
+[data-collapse-level="1"] .void-main::before,
+[data-collapse-level="1"] .blog::before { transform:translate(4px,-4px); }
+[data-collapse-level="1"] .environment-memory { animation-play-state:paused; }
+
+/* Native multi-page transitions: no click interception, delayed navigation or scroll changes. */
+@view-transition { navigation:auto; }
+::view-transition-old(root) { animation:story-out 250ms ease both; }
+::view-transition-new(root) { animation:story-in 250ms ease both; }
+::view-transition-group(environment-memory) { animation:none; }
+::view-transition-old(environment-memory), ::view-transition-new(environment-memory) { animation:story-out 250ms ease both; }
+html[data-lingering="true"]::view-transition-old(environment-memory) { animation:story-out 250ms ease 450ms both; }
+@keyframes story-out { to { opacity:0; } }
+@keyframes story-in { from { opacity:0; } }
+@media(max-width:440px) {
+  .story-404 .uncertain-footprints { right:3%;height:39%;bottom:0; }
+  .cresson-control.about-cresson > svg { width:36px;height:36px;--cresson-ring-shift:7.111px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*) { animation:none !important; }
+  [data-collapse-level="1"] .hero-environment,[data-collapse-level="1"] .snow-field-art,[data-collapse-level="1"] .void-main::before,[data-collapse-level="1"] .blog::before { transform:none; }
+}
+@media print { .environment-memory,.uncertain-footprints,.cresson-control { display:none; } }
+
+/* Depth belongs only to existing atmospheric scenes, below readable content. */
+.snow-atmosphere { position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;mask-image:linear-gradient(90deg,transparent 15%,#0006 45%,#000 70%); }
+.snow-layer { position:absolute;inset:-80px 0; }
+.snow-layer i { position:absolute;left:var(--snow-x);top:0;width:2px;height:2px;border-radius:50%;background:#f7fbff;opacity:.25;box-shadow:0 0 1px #52687766; }
+.snow-middle i { width:3px;height:3px;opacity:.52; }
+.snow-front i { width:6px;height:6px;opacity:.38;filter:blur(1px); }
+.snow-fog { position:absolute;inset:-20px;background:radial-gradient(ellipse at 75% 70%,#e6edf218,transparent 65%); }
+[data-environment-motion=ready] .snow-layer i { animation:snow-drift var(--snow-duration) linear var(--snow-delay) infinite; }
+[data-environment-motion=ready] .snow-fog { animation:fog-drift 36s ease-in-out infinite alternate; }
+@keyframes snow-drift { from { transform:translate(0,-20px); } to { transform:translate(var(--snow-drift),850px); } }
+@keyframes fog-drift { to { transform:translate(18px,5px); } }
+.void-main .snow-atmosphere { z-index:0;mask-image:linear-gradient(90deg,#000,transparent 42% 58%,#000); }
+.void-main > :is(.cresson-control,p) { position:relative; }
+.story-404 .snow-atmosphere { mask-image:linear-gradient(90deg,transparent 30%,#000 80%); }
+.hero-environment,.snow-field-art,.void-main::before { scale:1.015; }
+.hero-environment,.snow-field-art,.void-main::before,.blog::before,.collapse-selvedge { transition:transform 1000ms ease; }
+.cresson-flower :is(.cresson-heart,.cresson-inner,.cresson-outer,.cresson-rings) { transition:fill 1000ms ease,fill-opacity 1000ms ease,transform 1000ms ease; }
+[data-collapse-level="1"] :is(.hero-environment,.snow-field-art,.blog::before,.collapse-selvedge),[data-collapse-level="1"] .void-main::before { transition-duration:700ms; }
+[data-collapse-level="1"] .cresson-flower :is(.cresson-heart,.cresson-inner,.cresson-outer,.cresson-rings) { transition-duration:700ms; }
+[data-collapse-level="1"] .collapse-repeat-echo { opacity:.7; }
+.cresson-control:is(.is-listening,.is-attending,.is-answering) :is(.cresson-heart,.cresson-rings) { transition-duration:600ms; }
+.cresson-control.is-attending .cresson-rings { transform:translate(calc(var(--cresson-ring-shift) * 1.5),0); }
+.cresson-control.is-answering .cresson-heart { fill:var(--accent-red);fill-opacity:.88; }
+.cresson-control.is-answering .cresson-rings { transform:translate(calc(var(--cresson-ring-shift) * 1.5),0); }
+@media(max-width:760px) { .snow-layer i:nth-child(even),.snow-front i:last-child { display:none; } }
+@media(prefers-reduced-motion:reduce) {
+ .snow-atmosphere { background:url('/assets/snow-grain.svg');opacity:.03; }
+ .snow-layer,.snow-fog { display:none; }
+ .hero-environment,.snow-field-art,.void-main::before,.blog::before,.collapse-selvedge { transition:none!important; }
+}
+@media print { .snow-atmosphere { display:none; } }
+/* Persona composition: image, illumination and flower share the same crop. */
+.persona-composition { margin:0 auto 64px;max-width:min(1100px,125.4167vh); }
+.persona-scene { position:relative;isolation:isolate;overflow:hidden;aspect-ratio:5504/3072;max-width:125.4167vh;width:100%;margin:auto; }
+.persona-scene > picture { display:block;width:100%;height:100%; }
+.persona-scene img { display:block;width:100%;height:100%;object-fit:contain;transition:filter 1000ms ease; }
+.persona-composition figcaption { margin-top:16px;color:var(--text-secondary); }
+.about-personal { max-width:720px;margin:0 auto; }
+.persona-illumination { position:absolute;inset:0;width:100%;height:100%;pointer-events:none; }
+.persona-candles { opacity:.25;transition:opacity 1000ms ease; }
+@media(prefers-reduced-motion:no-preference) {
+ .persona-scene:hover .persona-candles { animation:persona-candle-light 9s ease-in-out 1; }
+}
+@keyframes persona-candle-light { 0%,100% {opacity:.25;} 35% {opacity:.4;} 65% {opacity:.18;} }
+.persona-scene > .persona-flower-light { position:absolute;inset:0;pointer-events:none;opacity:0;clip-path:ellipse(6.5% 10% at 50.3% 69%);transition:opacity 1000ms ease; }
+.persona-flower-light img { filter:saturate(1.18) brightness(1.08); }
+.persona-cresson { position:absolute;left:50.3%;top:69%;width:13%;height:20%;transform:translate(-50%,-50%);padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer; }
+.persona-cresson:focus-visible { outline:1px solid #b3cbd9;outline-offset:5px; }
+.persona-center { display:block;width:100%;height:100%;overflow:visible;pointer-events:none;opacity:0;transition:opacity 1000ms ease; }
+.persona-center-rings { transition:transform 600ms ease;transform-origin:center; }
+.persona-cresson:is(:hover,:focus-visible) .persona-center { opacity:.12; }
+.persona-cresson.is-listening .persona-center { opacity:.28; }
+.persona-cresson.is-attending .persona-center { opacity:.35; }
+.persona-cresson:is(.is-attending,.is-answering) .persona-center-rings { transform:translate(1.5px,-.5px); }
+.persona-cresson.is-answering .persona-center { opacity:.5; }
+.persona-scene:has(.is-answering) .persona-flower-light { opacity:.45; }
+.persona-scene:has(.is-answering) .persona-candles { opacity:.08;animation:none; }
+[data-collapse-level="1"] .persona-scene > picture:not(.persona-flower-light) img { filter:saturate(.92) brightness(.96); }
+[data-collapse-level="1"] .persona-flower-light { opacity:.65; }
+[data-collapse-level="1"] .persona-cresson .persona-center { opacity:.55; }
+[data-collapse-level="1"] .persona-candles { opacity:.06;animation:none; }
+@media(max-width:600px) {
+ .persona-scene { aspect-ratio:4/5;max-height:none;width:100%; }
+ .persona-scene img { object-fit:cover;object-position:50% 50%; }
+ .persona-cresson { left:50.67%;width:29.1%; }
+ .persona-scene > .persona-flower-light { clip-path:ellipse(14.55% 10% at 50.67% 69%); }
+ .persona-composition { margin-bottom:40px; }
+}
+@media(prefers-reduced-motion:reduce) {
+ .persona-scene img,.persona-center,.persona-center-rings,.persona-candles,.persona-scene > .persona-flower-light { transition:none;animation:none; }
+ .persona-cresson:is(.is-attending,.is-answering) .persona-center-rings { transform:none;stroke-opacity:.65; }
+}
+@media print { .persona-illumination,.persona-flower-light,.persona-cresson { display:none!important; } }

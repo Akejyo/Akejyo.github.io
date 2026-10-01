@@ -1,0 +1,1240 @@
+---
+title: TX·IEG菁英班3期作业wp
+date: '2023-12-09'
+categories:
+  - Study
+  - Re
+tags:
+  - MISC
+  - Re
+math: true
+image:
+  path: /img/tx_fen.png
+  alt: ~~~
+category: Re
+description: >-
+  使用Windows API CreateRemoteThread 远程注入模块到 crackme 进程中并且不崩溃，然后使用 ark 工具(例如
+  processhacker 等)能够查看注入模块的信息；
+number: '045'
+selected: false
+author: Akejyo
+importedFrom: Re/2023-12-9-tx.md
+---
+## TX·IEG菁英班3期作业wp
+
+### 第一次作业
+
+给了一个 `crackme.exe`，运行出现一个命令行界面：
+
+![image-20231209021740185](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231209021740185.png)
+
+**题目要求：**
+
+1. 使用Windows API `CreateRemoteThread` 远程注入模块到 crackme 进程中并且不崩溃，然后使用 ark 工具(例如 processhacker 等)能够查看注入模块的信息；
+2. 分析并调试程序，找到正确的flag；
+3. 利用注入的DLL ，Hook程序代码：通过Hook进程中的函数使得输入任何字符串，控制台都会打印“正确”.
+
+***
+
+#### 1. CreateRemoteThread 远程注入
+
+首先要找到进程 pid，可以通过进程名称找到其 pid
+
+先取一个进程快照，然后循环遍历找进程，获得其 pid
+
+```cpp
+bool FindProcess(const wchar_t* processName, DWORD& dwProcess) {
+    HANDLE hProcessSnap;
+    PROCESSENTRY32 pe32;
+    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); // 获得进程快照
+    if (hProcessSnap == INVALID_HANDLE_VALUE) return false;         // 检查是否有效
+
+    pe32.dwSize = sizeof(PROCESSENTRY32);       // 初始化大小
+    if (!Process32First(hProcessSnap, &pe32)) { // 获取hProcessSnap的第一个进程
+        CloseHandle(hProcessSnap);
+        return false;
+    }
+    do {                                                // 循环遍历所有快照
+        if (wcscmp(pe32.szExeFile, processName) == 0) { // 名称一致
+            dwProcess = pe32.th32ProcessID;
+            CloseHandle(hProcessSnap);
+            return true;
+        }
+    } while (Process32Next(hProcessSnap, &pe32));
+    CloseHandle(hProcessSnap);
+    return false;
+}
+```
+
+注入主体部分：
+
+1. 打开进程对象 `HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwProcess);`
+
+   OpenProcess 函数用来打开一个已存在的进程对象，返回进程的句柄 [OpenProcess function ](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-openprocess)
+
+2. `LPVOID allocatedMem = VirtualAllocEx(hProcess, NULL, sizeof(myDLL), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); ` 在目标进程中分配内存存储DLL的路径，单纯就是分配一个路径的大小的空间，返回已分配页区域的基址  [VirtualAllocEx function](https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualallocex)
+
+3. `WriteProcessMemory(hProcess, allocatedMem, myDLL, sizeof(myDLL), NULL)` 向进程写入DLL路径 [WriteProcessMemory function](https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-writeprocessmemory)
+
+4. 进程注入最核心的部分就是用 Windows API，在目标进程上开一个线程调用 LoadLibrary 函数加载我们自己的dll。kernel32.dll是一个 Windows 的核心动态链接库文件，提供大量 Windows API，是 Windows 必有的动态库文件，大多数进程都会调用 kernel32.dll，先 `GetModuleHandle(TEXT("kernel32.dll"))` 获得一下句柄，然后找到 LoadLibrary 的首地址：
+
+   `FARPROC pLoadLibraryA = GetProcAddress(GetModuleHandle(TEXT("kernel32.dll")), "LoadLibraryA");`
+
+   最后使用 [CreateRemoteThread](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createremotethread) 函数开一个线程：
+
+   `HANDLE hThread = CreateRemoteThread(hProcess, 0, 0, (LPTHREAD_START_ROUTINE)pLoadLibraryA, allocatedMem, 0, 0);`
+
+完整主函数代码如下，还包含了提权的部分：
+
+```cpp
+#include <bits/stdc++.h>
+#include <windows.h>
+#include <TlHelp32.h>
+#include <tchar.h>
+
+using namespace std;
+
+bool FindProcess(const wchar_t* processName, DWORD& dwProcess) {
+    HANDLE hProcessSnap;
+    PROCESSENTRY32 pe32;
+    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); // 获得进程快照
+    if (hProcessSnap == INVALID_HANDLE_VALUE) return false;         // 检查是否有效
+
+    pe32.dwSize = sizeof(PROCESSENTRY32);       // 初始化大小
+    if (!Process32First(hProcessSnap, &pe32)) { // 获取hProcessSnap的第一个进程
+        CloseHandle(hProcessSnap);
+        return false;
+    }
+    do {                                                // 循环遍历所有快照
+        if (wcscmp(pe32.szExeFile, processName) == 0) { // 名称一致
+            dwProcess = pe32.th32ProcessID;
+            CloseHandle(hProcessSnap);
+            return true;
+        }
+    } while (Process32Next(hProcessSnap, &pe32));
+    CloseHandle(hProcessSnap);
+    return false;
+}
+
+bool EnableDebugPrivilege() { // 提权
+    HANDLE token;
+    TOKEN_PRIVILEGES tp;
+    // 打开进程令牌环
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token)) {
+        cout << "打开进程令牌失败" << endl;
+        return false;
+    }
+    //  获取进程本地唯一ID
+    LUID luid;
+    if (!LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid)) {
+        cout << "获取LUID失败" << endl;
+        return false;
+    }
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+    tp.Privileges[0].Luid = luid;
+    // 调整进程权限
+    if (!AdjustTokenPrivileges(token, 0, &tp, sizeof(TOKEN_PRIVILEGES), NULL, NULL)) {
+        cout << "提权失败" << endl;
+        return false;
+    }
+    return true;
+}
+
+void CreateRemoteThread_inject() {
+    DWORD dwProcess;
+    char myDLL[] = "E:\\vs\\test\\x64\\Debug\\test.dll";
+    if (FindProcess(L"crackme.exe", dwProcess)) {
+        cout << dwProcess << endl;
+
+        HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwProcess);
+        LPVOID allocatedMem = VirtualAllocEx(hProcess, NULL, sizeof(myDLL), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE); // 在目标进程中分配内存存储DLL的路径
+        if (!WriteProcessMemory(hProcess, allocatedMem, myDLL, sizeof(myDLL), NULL)) {
+            cout << "写入DLL路径失败" << endl;
+            cout << GetLastError() << endl;
+        };
+        FARPROC pLoadLibraryA = GetProcAddress(GetModuleHandle(TEXT("kernel32.dll")), "LoadLibraryA");
+        HANDLE hThread = CreateRemoteThread(hProcess, 0, 0, (LPTHREAD_START_ROUTINE)pLoadLibraryA, allocatedMem, 0, 0);
+        if (!hThread) {
+            cout << "创建线程失败" << endl;
+            cout << GetLastError() << endl;
+        };
+        CloseHandle(hThread);
+        CloseHandle(hProcess);
+    }
+}
+int main() {
+    if (!EnableDebugPrivilege()) {
+        cout << "提权失败" << endl;
+        return 0;
+    }
+    CreateRemoteThread_inject();
+    int tmp;
+    cin >> tmp;
+    return 0;
+}
+```
+
+接下来是我们要注入的 dll，dll 工程如何建立可简单搜索到，下面的 dllmain.cpp 就是用来生成 dll 的
+
+dllmain.cpp代码
+
+```cpp
+// dllmain.cpp : 定义 DLL 应用程序的入口点。
+#include "pch.h"
+DWORD WINAPI ThreadProc(){
+    MessageBox(NULL, L"注入成功", L"1", 0);
+    return 0;
+}
+
+BOOL APIENTRY DllMain( HMODULE hModule,
+                       DWORD  ul_reason_for_call,
+                       LPVOID lpReserved
+                     )
+{
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+        CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadProc, NULL, 0, NULL);
+        break;
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
+    return TRUE;
+}
+
+
+```
+
+需要注意的是，主函数生成的 exe 和 `dllmain.cpp` 生成 dll 都必须和 `crackme.exe ` 的平台保持一致，即都是64位。比较坑的是 vs 默认是 32位，被这个坑了巨久。
+
+先运行 `crackme.exe` 然后运行主函数的程序，结果如下：
+
+![image-20231209022427403](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231209022427403.png)
+
+成功找到 crackme 进程（pid 29344），并向 crackme 进程注入了 `test.dll`，显示了一个消息框
+
+***
+
+#### 2. 找到正确的 flag
+
+ida 打开，字符串啥的都搜了一波，啥也没发现.
+
+进入 `main` 函数，里面就一个函数 `sub_1400014D0`，再进去看看，一波断点调试后发现了输出输入函数是什么
+
+```c
+  sub_140001020(&v34);
+  CreateThread(0i64, 0i64, StartAddress, 0i64, 0, 0i64);
+  sub_140001070(&unk_140025600, v37);
+```
+
+其中 `sub_140001020` 是输出函数，这里是打印"请输入flag："
+
+![image-20231209023325240](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231209023325240.png)
+
+然后 `sub_140001070` 是输入函数，输入的字符串保存到v37
+
+既然知道输出输入了就容易读代码了，再往下找输出函数
+
+```cpp
+  v31 = v37;
+  do
+  {
+    v32 = (unsigned __int8)*(v31 - 48);
+    v33 = (unsigned __int8)*v31 - v32;
+    if ( v33 )
+      break;
+    ++v31;
+  }
+  while ( v32 );
+  if ( v33 )
+    v34.m128i_i32[0] = -872817740;
+  else
+    v34.m128i_i32[0] = -1879061547;
+  v34.m128i_i16[2] = 3338;
+  *(__int16 *)((char *)v34.m128i_i16 + 1) ^= 0x3736u;
+  v34.m128i_i8[3] ^= 0x38u;
+  v34.m128i_i8[6] = 0;
+  sub_7FF7891B1020(&v34);
+```
+
+v37 是刚才输入的字符串，这里赋值给了 v31.
+
+然后一顿循环，用 v33 作分支条件，断点调试可以知道 -1879061547 对应的是正确， -872817740 对应的是错误，也就是说我们要让 v33 为 0.
+
+再看看那个循环，48很有迷惑性（'0'的ascii），但仔细一看会发现它是直接用v31字符串指针去减48，这一减岂不是就跑到其他内存地方去了，断点调试看看：
+
+![image-20231209023800316](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231209023800316.png)
+
+这里asd是我随便输入的字符串，往上找48位：
+
+![image-20231209023835070](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231209023835070.png)
+
+flag：`HiGWDUuXQS6wVHBTp0ERfJe6VqprMqD1`
+
+***
+
+#### 3. Hook
+
+由2可以知道这个程序的逻辑了，想要一直输出正确也很简单，直接在那个 if 分支做手脚就好，断点调试到那个分支：
+
+![image-20231209024146350](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231209024146350.png)
+
+这里先 test 了一下，然后 jnz 做分支跳转，到 ce 看看：
+
+![image-20231209024348777](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231209024348777.png)
+
+那就很明显了，理论上我直接把 18e7 和 18e9 这两个换 nop 就行
+
+![image-20231209024456266](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231209024456266.png)
+
+![image-20231209024521183](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231209024521183.png)
+
+然后再利用刚才在1里写的 dll 注入，直接重写一下 dllmain：
+
+```cpp
+// dllmain.cpp : 定义 DLL 应用程序的入口点。
+#include "pch.h"
+#include <windows.h>
+#include <bits/stdc++.h>
+using namespace std;
+void HookJNE(void* pJNE) {
+    DWORD oldProtect;
+    VirtualProtect(pJNE, 4, PAGE_EXECUTE_READWRITE, &oldProtect); //4个nop，分配4
+    *(DWORD*)pJNE = 0x90909090; // 换入nop nop nop nop
+    VirtualProtect(pJNE, 4, oldProtect, &oldProtect);
+}
+
+BOOL APIENTRY DllMain(HMODULE hModule,
+    DWORD ul_reason_for_call,
+    LPVOID lpReserved) {
+    switch (ul_reason_for_call) {
+    case DLL_PROCESS_ATTACH: {
+        HMODULE hCrackMe = GetModuleHandle(TEXT("crackme.exe")); //获得基地址
+        if (hCrackMe != NULL) {
+            HMODULE jneAddress = (HMODULE)((size_t)hCrackMe + 0x18E7);
+            HookJNE((void*)jneAddress);
+        }
+    } break;
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
+    return TRUE;
+}
+```
+
+然后就和1一样即可
+
+***
+
+### 第二次作业
+
+给了一个 `crackme1.apk`，丢到虚拟机运行是一个输入字符串的界面，输入字符串点击确认会弹出 toast 消息 "wrong" 或者 "right"
+
+题目要求：
+
+1. 使用ptrace技术远程注入模块到crackme1进程中并且不崩溃，然后使用如下命令在远程进程中能够查看注入模块的信息；
+2. 通过hook进程中的函数使得输入任何字符串，点击确认都会弹出toast消息”right”.
+
+***
+
+遇到很多环境什么的问题，放点链接：
+
+\[Android SDK Tools 安装时找不到JDK]\([https://blog.csdn.net/qq_48016058/article/details/113869661#:\~:text=今天](https://blog.csdn.net/qq_48016058/article/details/113869661#:~:text=今天) 安装Android studio 的 时 候发现 安装 程序,Files Java  jdk 1.7.0_21”了。 （这个地方一定要设置 JAVA —HOME%2C使用直接赋)
+
+[安卓模拟器简介和adb使用](https://blog.csdn.net/weixin_42311335/article/details/112136351)
+
+最新版的Android Studio没法断点调试是因为没有smail idea，手动下载\[Android studio 断点灰色 ]\([https://blog.51cto.com/u_16213581/7106707#:\~:text=之前我写过一篇Android](https://blog.51cto.com/u_16213581/7106707#:~:text=之前我写过一篇Android) Studio 3.0%2B无源码调试apk的博客，可能很多小伙伴试了，发现虽然apk是导入进Android Studio，但是却无法加断点，主要是因为新版本的Android Studio默认解析smali文件的插件是 Smali Support ，这个插件不支持断点，所以我们需要自己手动下载支持断点的smali解析插件：,1、下载支持断点的smali解析插件： smalidea%2C目前最新的版本是 0.0.6 ，他们GitHub仓库源码在 这里 ，有兴趣的可以去瞅一瞅，注意：Android Studio 4.1.%2B的一定要用0.0.6版本以上的，否则没效果)
+
+***
+
+#### 1. petrace 远程注入
+
+**ptrace步骤：**
+
+1. 调用 ptrace 系统函数进行附加到远程进程
+2. 保存寄存器的环境数据
+3. 调用 malloc 系统函数进行分配内存空间
+4. 想附加的进程写入模块名称和要执行的函数名称
+5. 调用 dlopen 系统函数进行打开注入的模块
+6. 恢复寄存器的环境数据
+7. 调用 ptrace 系统函数进行和附加进程进行剥离
+
+`malloc` 和 `dlopen` 分别在 `libc.so` 和 `libdl.so` 中，32位 Android 设备上一般 位于`/system/lib`
+
+```shell
+:/ # ls /system/lib | grep libc.so
+libc.so
+:/ # ls /system/lib | grep libdl.so                                        
+libdl.so
+```
+
+***
+
+1. **附加进程、脱离进程、恢复进程、读写寄存器**
+
+调用 `ptrace` 函数，参数使用 `PTRACE_ATTACH`、`PTRACE_DETACH`、`PTRACE_CONT`、`PTRACE_GETREGS`、`PTRACE_SETREGS`，下面是附加进程和读寄存器的代码：
+
+```c
+// 附加进程
+void ptrace_attach(pid_t pid) {
+    if (ptrace(PTRACE_ATTACH, pid, NULL, NULL) == -1) {
+        printf("Failed to attach:%d\n", pid);
+        return;
+    };
+    waitpid(pid, NULL, 0);
+}
+// 读寄存器
+void ptrace_getRegs(pid_t pid, struct pt_regs *regs_addr) {
+    if (ptrace(PTRACE_GETREGS, pid, NULL, (void *)regs_addr) == -1) {
+        printf("Failed to get regs:%d\n", pid);
+        return;
+    };
+}
+```
+
+2. **读取、写入数据**
+
+下面是读取数据的代码：
+
+```c
+void ptrace_readData(pid_t pid, void *addr, size_t len, void *buf) {
+    long i, j, remain;
+    char *laddr;
+    union u {
+        long val;
+        char chars[sizeof(long)];
+    } d;
+    j = len / 4;
+    remain = len % 4;
+    laddr = buf;
+    for (i = 0; i < j; i++) {
+        d.val = ptrace(PTRACE_PEEKDATA, pid, addr + i * 4, NULL);
+        memcpy(laddr, d.chars, 4);
+        laddr += 4;
+    }
+    if (remain) {
+        d.val = ptrace(PTRACE_PEEKDATA, pid, addr + i * 4, NULL);
+        memcpy(laddr, d.chars, remain);
+    }
+}
+```
+
+这里使用了 union 来方便类型转换，使用 `ptrace(PTRACE_PEEKDATA, pid, addr + i * 4, NULL);`  读取数据时，一次是读一个 long 的数据，所以多余的数据要特殊处理。
+
+对于写入数据，对于多余的数据要先读一个 long 的原数据，然后一个个赋值进去再写入。
+
+3. **调用系统进程函数**
+
+调用系统进程函数首先需要知道进程函数的内存地址以及调用这个函数需要的参数，先保存原始寄存器，设置寄存器，将前4个参数依次放在 r0-r3 寄存器，多余的参数放入栈中：
+
+```c
+	struct pt_regs regs;
+	for (int i = 0; i < paramNum && i < 4; i++)
+        regs.uregs[i] = param[i];
+    if (paramNum > 4) {
+        regs.uregs[13] -= (paramNum - 4) * sizeof(long);
+        ptrace_writeData(pid, (void *)regs.ARM_sp, (paramNum - 4) * sizeof(long), (void *)&param[4]);
+    }
+```
+
+其中 `regs.uregs[13]` 是 SP 寄存器栈指针，栈指针是向下增长的，所以先 -= 预留位置再写进去。
+
+将 PC 寄存器 `regs.uregs[15]` 移动到系统进程函数的地址。由于 ARM 架构有 ARM 和 Thumb 两种指令集，前者指令 4 字节长，后者是 2 字节长，所以需要判断其是 Thumb 模式还是 ARM 模式。PC 最低位为 1 则是 Thumb 模式，需要将 CPSR 寄存器的 T 位置1，然后清除 PC 寄存器最低位；反之是 ARM 模式，CPSR 的 T 位置 0。最后将 LR (`regs.uregs[14]`) 置0
+
+```c
+    #define CPSR_T_MASK 0x20
+	regs.uregs[15] = (long)proc_addr;
+    if (regs.uregs[15] & 1) {           // thumb模式
+        regs.uregs[15] &= (~1u);        // pc清除最低位，保持为偶数
+        regs.uregs[16] |= CPSR_T_MASK;  // cpsr的T位置1
+    } else {                            // arm模式
+        regs.uregs[16] &= ~CPSR_T_MASK; // cpsr的T位置0
+    }
+    regs.uregs[14] = 0;                 // lr置0
+```
+
+接着设置寄存器到进程，恢复进程继续，等待结束后恢复到原来的寄存器，获得返回值 R0
+
+4. **获取模块基址**
+
+依据是自己的还是其他的进程，到不同的地方去找 `"/proc/self/maps"` `"/proc/%d/maps", pid`，然后 `fopen` 打开读取，匹对字符串找对应的地址.
+
+5. **获取目标进程函数的内存地址**
+
+函数参数 `pid`、`lib_path`、`func_name`，先用 `dlopen` 打开库文件，获得库的句柄 `handle`，然后用 4 里的函数 `get_moduleBase` 获得当前进程中库的基地址 `local_handle` ，用 `dlsym(handle, func_name)` 函数获得当前进程库中函数的地址 `local_func_addr`，计算函数相对于库基地址的偏移量 `func_offset = local_func_addr - local_handle;`，利用这个偏移量，再获得目标进程中库的基地址就可以计算得到目标进程中函数的地址。
+
+```c
+    handle = dlopen(lib_path, RTLD_LAZY);
+    dlerror();
+    local_handle = get_moduleBase(-1, lib_path);
+    local_func_addr = dlsym(handle, func_name);
+    func_offset = local_func_addr - local_handle;
+    dlclose(handle);
+    remote_handle = get_moduleBase(pid, lib_path);
+    remote_func_addr = remote_handle + func_offset;
+```
+
+更具体的说明，`dlopen` 函数接受库文件的路径，将库文件加载到当前进程的地址空间，返回一个句柄，这个句柄并非库文件在当前地址空间的基地址（需要用 `get_moduleBase` 获得），句柄和基地址不是一概念。
+
+6. **注入函数**
+
+* `ptrace_attach` 附加进程
+
+* 调用 `malloc` 函数分配内存，再用 `ptrace_writeData` 写入 `lib_path`
+
+  ```c
+      malloc_addr = get_remoteFuncAddr(pid, "/system/lib/arm/libc.so", "malloc");
+      params[0] = strlen(lib_path) + 1;
+      mem_addr = ptrace_call(pid, malloc_addr, 1, params);
+  	ptrace_writeData(pid, mem_addr, strlen(lib_path) + 1, (void *)lib_path);
+  ```
+
+* 调用 `dlopen` 函数加载 `lib`
+
+  ```c
+      dlopen_addr = get_remoteFuncAddr(pid, "/system/lib/arm/linker", "dlopen");
+      params[0] = (long)mem_addr;  // filename
+      params[1] = (long)RTLD_LAZY; // flags
+      ptrace_call(pid, dlopen_addr, 2, params)
+  ```
+
+* 恢复进程 `ptrace_continue(pid);`，脱离进程 `ptrace_detach(pid);`
+
+7. **利用进程名获得 `pid`**
+
+调用 shell 指令 `pidof` 实现。先将指令写入字符串，使用 `popen` 函数执行指令，`fread` 函数读取输出
+
+***
+
+编译 `injector.c`：
+
+首先去 Android Studio 下载 NDK，之后添加环境路径 `E:\SDK\platform-tools` 和 `E:\SDK\ndk\26.1.10909125\toolchains\llvm\prebuilt\windows-x86_64\bin`，然后就可以在命令行里之间编译：`armv7a-linux-androideabi26-clang -o injector injector.c`
+
+编译生成 .so：`gcc injectso.c -fPIC -shared -o injectso.so`
+
+我自己电脑上用的是蓝叠模拟器，最开始连接的时候没连上，然后 Android Studio 对 arm 架构的适配极差，完全打不开 AVD，然后下了雷电模拟器，这个模拟器是 x86 的，我花了一两天的时间尝试安装 arm 兼容库未果，最后翻到一个帖子（甚至是NGA的）\[[国服相关\]发现有一些模拟器默认装arm架构的](https://ngabbs.com/read.php?tid=33707297\&rand=504)，这个帖子本来是喷有些 arm 模拟器性能不好的，却给了我搜索方向。然后又看到一个帖子介绍到蓝叠能适配各种架构，我打开蓝叠模拟器一看，x86 32-bit, x86 64-bit, ARM 32-bit, ARA 64-bit，果然还是得信任蓝叠。一波操作后很顺利的运行注入器程序了. 后来用 wsa 也成功了.
+
+然后我瞎捣鼓了整整5天来解决获取寄存器时的报错：`Device or resource busy`，真是一点方案都找不到，我只能认为是模拟器的问题😥，以后整个便宜真机再试试吧.
+
+完整代码：
+
+```c
+#include <dlfcn.h>
+#include <link.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/ptrace.h>
+#include <sys/types.h>
+#include <sys/user.h>
+#include <sys/wait.h>
+#include <errno.h>
+#define CPSR_T_MASK 0x20
+// 附加进程
+int ptrace_attach(pid_t pid) {
+    int status;
+    if (ptrace(PTRACE_ATTACH, pid, NULL, NULL) == -1) {
+        return -1;
+    }
+    waitpid(pid, &status, 0);
+    printf("attach to process pid: %d\n", pid);
+    return 0;
+}
+// 脱离进程
+int ptrace_detach(pid_t pid) {
+    if (ptrace(PTRACE_DETACH, pid, NULL, NULL) == -1) {
+        printf("Failed to detach:%d, error: %s\n", pid, strerror(errno));
+        return -1;
+    };
+    return 0;
+}
+// 恢复进程运行
+int ptrace_continue(pid_t pid) {
+    if (ptrace(PTRACE_CONT, pid, NULL, NULL) == -1) {
+        printf("Failed to continue:%d, error: %s\n", pid, strerror(errno));
+        return -1;
+    };
+    return 0;
+}
+// 读寄存器
+int ptrace_getRegs(pid_t pid, struct user_regs *regs_addr) {
+    if (ptrace(PTRACE_GETREGS, pid, NULL, (void *)regs_addr) == -1) {
+        printf("Failed to get regs:%d, error: %s\n", pid, strerror(errno));
+        return -1;
+    }
+    return 0;
+}
+// 设置寄存器
+int ptrace_setRegs(pid_t pid, struct user_regs *regs_addr) {
+    if (ptrace(PTRACE_SETREGS, pid, NULL, (void *)regs_addr) == -1) {
+        printf("Failed to set regs:%d\n", pid);
+        return -1;
+    };
+    return 0;
+}
+// 读取数据
+void ptrace_readData(pid_t pid, void *addr, size_t len, void *buf) {
+    long i, j, remain;
+    char *laddr;
+    union u {
+        long val;
+        char chars[sizeof(long)];
+    } d;
+    j = len / 4;
+    remain = len % 4;
+    laddr = buf;
+    for (i = 0; i < j; i++) {
+        d.val = ptrace(PTRACE_PEEKDATA, pid, addr + i * 4, NULL);
+        memcpy(laddr, d.chars, 4);
+        laddr += 4;
+    }
+    if (remain) {
+        d.val = ptrace(PTRACE_PEEKDATA, pid, addr + i * 4, NULL);
+        memcpy(laddr, d.chars, remain);
+    }
+}
+// 写入数据
+void ptrace_writeData(pid_t pid, void *addr, size_t len, void *buf) {
+    long i, j, remain;
+    char *laddr;
+    union u {
+        long val;
+        char chars[sizeof(long)];
+    } d;
+    j = len / 4;
+    remain = len % 4;
+    laddr = buf;
+    for (i = 0; i < j; i++) {
+        memcpy(d.chars, laddr, 4);
+        ptrace(PTRACE_POKEDATA, pid, addr + i * 4, d.val);
+        laddr += 4;
+    }
+    if (remain) { // 多余部分先读原数据
+        d.val = ptrace(PTRACE_PEEKDATA, pid, addr + i * 4, NULL);
+        for (j = 0; j < remain; j++)
+            d.chars[j] = *laddr++;
+        ptrace(PTRACE_POKEDATA, pid, addr + i * 4, d.val);
+    }
+}
+
+// 调用系统进程函数
+void *ptrace_call(pid_t pid, void *proc_addr, int paramNum, long *param) {
+    int status;
+    struct user_regs regs, original_regs;
+    long parameters[10];
+    // 保存原始寄存器
+    ptrace_getRegs(pid, &original_regs);
+    memcpy(&regs, &original_regs, sizeof(struct user_regs));
+    // SP: uregs[13]
+    // LR: uregs[14]
+    // PC: uregs[15]
+    // CPSR: uregs[16]
+    // 设置寄存器，前4个参数放在r0-r3中，后面的参数放入栈中
+    for (int i = 0; i < paramNum && i < 4; i++)
+        regs.uregs[i] = param[i];
+    if (paramNum > 4) {
+        regs.uregs[13] -= (paramNum - 4) * sizeof(long);
+        ptrace_writeData(pid, (void *)regs.uregs[13], (paramNum - 4) * sizeof(long), (void *)&param[4]);
+    }
+    regs.uregs[15] = (long)proc_addr;
+    if (regs.uregs[15] & 1) {           // thumb模式
+        regs.uregs[15] &= (~1u);        // pc清除最低位，保持为偶数
+        regs.uregs[16] |= CPSR_T_MASK;  // cpsr的T位置1
+    } else {                            // arm模式
+        regs.uregs[16] &= ~CPSR_T_MASK; // cpsr的T位置0
+    }
+    regs.uregs[14] = 0;                 // lr置0
+
+    if (ptrace_setRegs(pid, &regs) != 0 || ptrace_continue(pid) != 0) {
+        printf("call proc 0x%lx failed\n", (unsigned long)proc_addr);
+        return NULL;
+    }
+    waitpid(pid, &status, WUNTRACED);
+
+    while (1) {
+        if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
+            break;
+        }
+        ptrace_continue(pid);
+        waitpid(pid, &status, WUNTRACED);
+    }
+    ptrace_getRegs(pid, &regs);          // 获得返回值r0
+    ptrace_setRegs(pid, &original_regs); // 恢复原始寄存器
+
+    return (void *)regs.uregs[0];
+}
+// 获取模块基址
+void *get_moduleBase(pid_t pid, const char *moduleName) {
+    FILE *fp;
+    long addr = 0;
+    char *pch;
+    char filename[32];
+    char line[1024];
+    if (pid < 0) {
+        // self process
+        snprintf(filename, sizeof(filename), "/proc/self/maps");
+    } else {
+        snprintf(filename, sizeof(filename), "/proc/%d/maps", pid);
+    }
+    fp = fopen(filename, "rt");
+    if (fp != NULL) {
+        while (fgets(line, sizeof(line), fp)) {
+            if (strstr(line, moduleName)) {
+                sscanf(line, "%lx", (unsigned long *)(&addr));
+                break;
+            }
+        }
+        fclose(fp);
+    }
+    return (void *)addr;
+}
+// 获取函数内存地址
+void *get_remoteFuncAddr(pid_t pid, const char *lib_path, const char *func_name) {
+    void *handle, *local_handle, *local_func_addr, *remote_handle, *remote_func_addr;
+    unsigned long func_offset;
+
+    if ((handle = dlopen(lib_path, RTLD_LAZY)) == NULL) {
+        printf("dlopen failed: %s\n", dlerror());
+        return NULL;
+    }
+    dlerror();
+    local_handle = get_moduleBase(-1, lib_path);
+    local_func_addr = dlsym(handle, func_name);
+    func_offset = local_func_addr - local_handle;
+    dlclose(handle);
+    remote_handle = get_moduleBase(pid, lib_path);
+    remote_func_addr = remote_handle + func_offset;
+    printf("remote_func_addr: %p\n", remote_func_addr);
+    return remote_func_addr;
+}
+
+void inject(pid_t pid, const char *lib_path) {
+    void *mem_addr, *malloc_addr, *dlopen_addr;
+    long params[10];
+    // ATTACH 附加进程
+
+    ptrace_attach(pid);
+    malloc_addr = get_remoteFuncAddr(pid, "/system/lib/arm/libc.so", "malloc");
+    // 调用malloc函数分配内存写入lib_path "/system/lib/arm/libc.so"
+    params[0] = strlen(lib_path) + 1;
+    mem_addr = ptrace_call(pid, malloc_addr, 1, params);
+    if (mem_addr == NULL) {
+        printf("malloc failed in target process, exit\n");
+        ptrace_continue(pid);
+        ptrace_detach(pid);
+        return;
+    }
+    ptrace_writeData(pid, mem_addr, strlen(lib_path) + 1, (void *)lib_path);
+
+    dlopen_addr = get_remoteFuncAddr(pid, "/system/lib/arm/linker", "dlopen");
+    // 调用dlopen函数加载lib "/system/lib/arm/libdl.so"  "/system/lib/arm/linker"
+    params[0] = (long)mem_addr;  // filename
+    params[1] = (long)RTLD_LAZY; // flags
+    if (ptrace_call(pid, dlopen_addr, 2, params) == NULL) {
+        printf("dlopen failed in target process, exit\n");
+        ptrace_continue(pid);
+        ptrace_detach(pid);
+        return;
+    }
+
+    ptrace_continue(pid);
+    ptrace_detach(pid);
+}
+pid_t find_pid(const char *process_name) {
+    pid_t process_pid = -1;
+    FILE *fp = NULL;
+    char cli_cmd[1024];
+    char cli_output[1024];
+    sprintf(cli_cmd, "pidof %s", process_name);
+    fp = popen(cli_cmd, "r");
+    fread(cli_output, 1, 1024, fp);
+    pclose(fp);
+    if (!strlen(cli_output)) {
+        printf("process not found: %s\n", process_name);
+        return -1;
+    }
+    sscanf(cli_output, "%d", &process_pid);
+    printf("pid of %s: %d\n", process_name, process_pid);
+    return process_pid;
+}
+int main(int argc, char *argv[]) {
+    if (argc < 3) {
+        printf("Usage: %s <process_name> <lib_path>\n", argv[0]);
+        return 0;
+    }
+    pid_t pid = find_pid(argv[1]);
+    inject(pid, argv[2]);
+    return 0;
+}
+
+```
+
+#### 2. Hook
+
+虽然我连前面的注入都没成功，还是学习一下这个吧 👋
+
+Android Studio 打开看 apk 看 `crackme1/java/com.example/crackme1/MainActivity$1`，但是 smali 属实难看，jeb打开看看：
+
+```java
+public class MainActivity extends AppCompatActivity {
+    private ActivityMainBinding binding;
+    private Button btn1;
+
+    static {
+        System.loadLibrary("crackme1");
+    }
+
+    public MainActivity() {
+        super();
+    }
+
+    protected void onCreate(Bundle arg3) {
+        super.onCreate(arg3);
+        ActivityMainBinding v0 = ActivityMainBinding.inflate(this.getLayoutInflater());
+        this.binding = v0;
+        this.setContentView(v0.getRoot());
+        View v0_1 = this.findViewById(0x7F080058);
+        this.btn1 = ((Button)v0_1);
+        ((Button)v0_1).setOnClickListener(new View$OnClickListener() {
+            public void onClick(View arg6) {
+                Toast.makeText(MainActivity.this, MainActivity.this.stringFromJNI(MainActivity.this.findViewById(0x7F08000E).getText().toString()), 0).show();
+            }
+        });
+    }
+
+    public native String stringFromJNI(String arg1) {
+    }
+}
+
+```
+
+将 crackme1.apk 后缀改 .zip 再解压，使用 ida32 打开里面的 libcrackme1.so，找到函数 `Java_com_example_crackme1_MainActivity_stringFromJNI`
+
+```c
+int __fastcall Java_com_example_crackme1_MainActivity_stringFromJNI(int a1, int a2, int a3)
+{
+  char *s2; // [sp+Ch] [bp-7Ch]
+  int v6; // [sp+1Ch] [bp-6Ch]
+  char s[100]; // [sp+20h] [bp-68h] BYREF
+
+  s2 = (char *)sub_12A4(a1, a3, 0);
+  memset(s, 0, sizeof(s));
+  qmemcpy(s, "123", 3);
+  sub_F50(5, s);
+  if ( !strncmp(s, s2, 5u) || (sub_1134() & 1) != 0 )
+    v6 = sub_12EC(a1, "right");
+  else
+    v6 = sub_12EC(a1, "wrong");
+  return v6;
+}
+```
+
+这个函数将 s 和 s2 做比较，sub_12A4 函数比较简略，也许是获取输入字符串，看看 sub_F50：
+
+```c
+int __fastcall sub_F50(int a1, const char *a2)
+{
+  unsigned int v2; // r0
+  int v3; // r1
+  int v5; // [sp+8h] [bp-28h]
+  int i; // [sp+14h] [bp-1Ch]
+  size_t v9; // [sp+2Ch] [bp-4h]
+
+  v2 = time(0);
+  srand(v2);
+  for ( i = 0; i < a1; ++i )
+  {
+    v5 = rand();
+    v9 = _strlen_chk(a0123456789abcd, 0x40u);
+    sub_2964(v5, v9);
+    a2[i] = a0123456789abcd[v3];
+  }
+  a2[i] = 0;
+  return _android_log_print(4, "Crack", "Str:%s", a2);
+}
+```
+
+大概就是随机生成字符串塞进 a2 数组，再看看前面的 sub_1134
+
+```c
+int sub_1134()
+{
+  return 0;
+}
+```
+
+`return 0`，在汇编窗口可以看到东西：
+
+![image-20231211184107875](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231211184107875.png)
+
+注意看上面的部分，先给 R0 赋 0，然后下面 `CMP R0, #0` 直接跳转到 `loc_117c` 了。该函数偏移地址为 `0x1134`，我们让其返回 1 就可以了。
+
+先获取 `libcrackme1.so` 的基地址，这个基地址加上` 0x1134` 就是需要被 hook 的地址，在这个地址上直接贴上跳转汇编代码，跳转到我们自己函数的地址.
+
+现在考虑跳转代码，在 ARM 架构中，`MOV` 指令不能直接将一个大的立即数（地址）移动到寄存器，`MOV` 的立即数字段只有 8 位，我们需要用 `LDR` 来加载一个 32 位的值到寄存器里，起到一个中介作用。另外在 ARM 架构中，PC 寄存器是指向**当前指令之后两条指令的地址**，所以看下面代码：
+
+```shell
+LDR R0, [PC, #0]
+MOV PC, R0
+hookFunc
+```
+
+执行到 `LDR ` 这一句的时候，PC 寄存器指向的值其实就是 hookFunc。所以我们先把前两行汇编的字节码写到被 hook 函数的地址，再在后面两条指令后面写入 hookFunc 的地址
+
+```c
+    __memcpy(hooked_addr, shellCode, 0xc);
+    __memcpy(hooked_addr + 0x8, &hookFunc, 0x4);
+```
+
+[Online ARM to HEX Converter (armconverter.com)](https://armconverter.com/)
+
+`void onload() __attribute__((constructor));` 定义了一个函数 `onload`，当动态链接库被加载时自动执行。
+
+` mprotect(addr, 0x2000, PROT_READ | PROT_WRITE | PROT_EXEC);` 修改 addr 指向的内存区域的保护属性，使得其可以被读写执行。
+
+完整代码：
+
+```c
+#include <stdio.h>
+#include <string.h>
+#include <dlfcn.h>
+#include <sys/mman.h>
+
+void onload() __attribute__((constructor));
+unsigned char shellCode[0xc] = {0x00, 0x00, 0x9F, 0xE5, 0x00, 0xF0, 0xA0, 0xE1};
+int (*android_log_print)(int i, ...);
+void *(*memcpy_addr)(void *dst, void *src, size_t n);
+
+int hookFunc() {
+    android_log_print(3, "Crack", "hook success");
+    printf("Win");
+    return 1;
+}
+
+void hook() {
+    void *addr = NULL;
+    unsigned long proc_offset = 0x1134; // 被hook函数的偏移地址
+    void *hooked_addr;
+    FILE *fp;
+    char line[1024];
+    char filename[32] = "libcrackme1.so"; // 导出stringFromJNI的so
+    snprintf(filename, sizeof(filename), "/proc/self/maps");
+    fp = fopen(filename, "rt");
+    if (fp != NULL) {
+        while (fgets(line, sizeof(line), fp))
+            if (strstr(line, filename)) {
+                sscanf(line, "%lx", (unsigned long *)(&addr));
+                break;
+            }
+        fclose(fp);
+    }
+    hooked_addr = (void *)((unsigned long)addr + proc_offset);
+    printf("hooked proc at 0x%lx", (unsigned long)hooked_addr);
+    mprotect(addr, 0x2000, PROT_READ | PROT_WRITE | PROT_EXEC);
+    memcpy_addr(hooked_addr, shellCode, 0xc);
+    memcpy_addr(hooked_addr + 0x8, &hookFunc, 0x4);
+}
+
+void onload() {
+    void *handle;
+    handle = dlopen("/system/lib/arm/liblog.so", RTLD_LAZY);
+    android_log_print = dlsym(handle, "__android_log_print");
+    handle = dlopen("/system/lib/arm/libc.so", RTLD_LAZY);
+    memcpy_addr = (void *(*)(void *, void *, size_t))dlsym(handle, "memcpy");
+    hook();
+}
+
+```
+
+### 期中 PC 端
+
+> 其实期中还有个移动端，但是期末时间紧+移动端太痛苦+我是fw所以就摆了
+
+ida64 打开，翻了一圈没看到什么东西，调式时会显示“检测到调试”直接退出，怀疑是加壳了，拖到 exeinfo 看看
+
+![QQ截图20231230141101](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/QQ%E6%88%AA%E5%9B%BE20231230141101.png)
+
+提示是 vmp 加壳，搜了一圈决定先弄个 x64dbg 试试
+
+尝试找一下输入输出在哪，x64dbg 打开 crackme2.exe，符号 → crackme2.exe，在右侧可以看到函数 API：
+
+![image-20231230165749765](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230165749765.png)
+
+![image-20231230165758297](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230165758297.png)
+
+断点调试一波发现 `WriteFile` 应该是程序的输出函数，那对应的输入就找 `ReadFile`
+
+![image-20231230170346190](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230170346190.png)
+
+这个程序如果输入字符串不正确的话，不会打印任何信息，因此没法像前面作业一样直接找到程序最后的部分，还是先尝试找到主函数在哪，断点一下 `ReadFile` 和 `WriteFile`，观察一下：
+
+![image-20231230184234507](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230184234507.png)
+
+![image-20231230184324559](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230184324559.png)
+
+两个函数断点后查看调用堆栈，一大片调用，都可以回溯到同一个地址 `140001519` ，过去看看：
+
+![image-20231230185330217](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230185330217.png)
+
+`call crackme2.1400010c0`，主函数的位置应该就这了 `1400010c0`
+
+从这个地址开始的下一个调用 `140298E12` ( `ReadFile` 的) 和 `140298DF8`  ( `WriteFile` 的) 这俩地址很近
+
+![image-20231230184752458](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230184752458.png)
+
+在这个 `ReadFile` 地方查看控制流图，中间一大堆奇奇怪怪的东西看不懂一点，润到最后，注意到一个大分支，其中里面部分 `call crackme2.140001020`，由上图可知这个是 `WriteFile`，也就是说这个地方应该是打印“正确”的地方：
+
+![image-20231230190415707](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230190415707.png)
+
+外面的部分调用了 `Sleep`，也就是不正确的情况（程序过了一会才自动退出）
+
+回到上面看这个分支的条件：
+
+![image-20231230190445054](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230190445054.png)
+
+再往上分析一下 `eax` 哪来的
+
+![image-20231230191413390](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230191413390.png)
+
+这个地方循环在 `[rax]` 和 `[rax+r8]` 取一字节做比较，相同就向下走检查 `[rax+r8]` 是不是 $0$，是 $0$ 就跳出循环到 `test edx,edx`，此时 `[rax]` 也该是 $0$，因此会跳到下面输出“正确”的地方。也就是说这个 `[rax+r8]` 就是我们要找的 flag，断点看看：
+
+![image-20231230193800625](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230193800625.png)
+
+`RAX` 是我输入的 `testtest`，拿 x64dbg 自带的计算器算 `rax+r8`：
+
+![image-20231230194453058](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230194453058.png)
+
+> 突然发现直接窗口处也看到了
+> ![image-20231230194533996](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230194533996.png)
+
+flag：`jZiBUViF0WUYwISp4qjx5YwucMNGpb4g`
+
+![image-20231230194613953](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231230194613953.png)
+
+### 第三次作业
+
+> 题目：给了一个 Unity Mono 写的 FlappyBird 的游戏，要求实现篡改一局游戏得分、小鸟和管道无碰撞的功能.
+>
+> ![image-20240110140555019](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110140555019.png)
+
+首先用 dnSpy 打开游戏的 `Assembly-CSharp.dll` 分析逻辑，打开 `BirdScripts` 可以看到众多脚本函数
+![image-20240110140926712](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110140926712.png)
+
+看到 `OnTriggerEnter2D`，直接进去看，逻辑一目了然：碰撞到 tag 为 PipeHolder 的 Collider 时，触发 trigger 使得 score++. 这个是获取分数的核心部分.
+
+```c#
+private void OnTriggerEnter2D(Collider2D target)
+{
+	if (target.tag == "PipeHolder")
+	{
+		this.audioSource.PlayOneShot(this.pointClip);
+		this.score++;
+		GamePlayController.instance.setScore(this.score);
+	}
+}
+```
+
+`OnCollisionEnter2D` 里可以看到小鸟其他碰撞的逻辑：当出现碰撞事件时，若碰撞的对象 tag 为 Pipe、Ground、Enemy 则触发死亡，若对象 tag 为 Flag 则触发 cheerClip 动画
+
+```c#
+private void OnCollisionEnter2D(Collision2D target)
+{
+	if (target.gameObject.tag == "Pipe" || target.gameObject.tag == "Ground" || target.gameObject.tag == "Enemy")
+	{
+		if (this.isAlive)
+		{
+			this.isAlive = false;
+			this.anim.SetTrigger("BirdDied");
+			this.audioSource.PlayOneShot(this.diedClip);
+			GamePlayController.instance.playerDiedShowScore(this.score);
+		}
+	}
+	else if (target.gameObject.tag == "Flag" && this.isAlive)
+	{
+		this.isAlive = false;
+		this.audioSource.PlayOneShot(this.cheerClip);
+		GamePlayController.instance.finishGame();
+	}
+}
+```
+
+稍微多瞅瞅，在 `PipeCollertorScript` 的里还可以看到管道的生成逻辑：在 `Awake()` 初始化，`OnTriggerEnter2D` 里会让下一个管道生成的 $x$ 坐标增加一个 `distance`，$y$ 坐标在 `pipeMin` 和 `pipeMax` 中间随机选一个，其中 `distance = 3f`， `pipeMax = 2.3f`，`pipeMin = -1f`
+
+> 这好像不是管道的生成逻辑（，后来尝试修改这里的东西没啥反应，可能在其他文件里
+
+***
+
+#### 使用 dnSpy 编译修改
+
+1. ##### 篡改游戏得分
+
+   方法感觉挺多的，可以在 `BirdScripts` 的 `Awake()` 里将 `this.score` 初始化为其他值（比如 $555$）
+   ![image-20240110145119211](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110145119211.png)
+
+   > 这个方法我发现最开始显示是 $0$ ，路过一个管道后变为 $556$，这是因为显示的分数是根据 `score` 修改的，初始化为 $0$，`score` 有更新时才会跟着更新一次。
+
+   在 `BirdScripts` 的 `OnTriggerEnter2D` 里修改 `this.score++` 为 `this.score+=100`
+
+![image-20240110145503012](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110145503012.png)
+
+> ​	路过俩管道分数得到 $200$
+
+2. ##### 小鸟和管道无碰撞
+
+   本来我是想把 `BirdScripts` 的 `OnCollisionEnter2D` 的死亡分支那一块直接删掉的，结果发现小鸟确实不会死了，但是碰撞还是存在，一直怼着管道：
+   ![image-20240110151415243](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110151415243.png)
+
+   考虑到小鸟的碰撞涉及到分数的变动，取消碰撞体得从管道下手。最开始我在 `BirdScripts` 的 `Awake` 里直接让所有 tag 为 Pipe 的碰撞体都失效，结果只有第一个成功了，原因在于后面的管道是动态生成的而非最开始就有的.
+
+   换个思路，让小鸟碰撞到管道时直接让 target 的碰撞体失效，即不会碰撞，也不会影响得分。
+
+   ```c#
+   	if (target.gameObject.tag == "Pipe" || target.gameObject.tag == "Ground" || target.gameObject.tag == "Enemy")
+   	{
+   		target.gameObject.GetComponent<Collider2D>().enabled = false;
+   		return;
+       }
+   ```
+
+   ![image-20240110154544115](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110154544115.png)
+
+#### 使用 Unity Explorer 游戏内修改
+
+1. ##### 篡改游戏得分
+
+   Object Explorer → Player → BirdScripts → Filter names: score，修改为 $666$
+
+   ![image-20240110172812204](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110172812204.png)
+
+   ![image-20240110172844261](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110172844261.png)
+
+2. ##### 小鸟和管道无碰撞
+
+   能看到一大堆 Children 为 Pipe Holder，可以手动点取消其 BoxCollder2D，但是似乎没法做到一次性取消所有的碰撞，只能取消一下 Player 碰撞装模装样实现一下：
+
+![image-20240110173412366](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110173412366.png)
+
+![image-20240110173429900](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110173429900.png)
+
+#### 使用 SharpMonoInjector 注入程序集
+
+> 这个 SharpMonoInjector 显示有大问题，看不见下面的东西了，整了俩小时没解决，最后选择用命令模式🙃，各种解决方案都试过，兼容性DPI，各种版本，我猜测是字体导致的，但是换字体又出现了新问题，实在不想继续浪费时间了
+>
+> ![image-20240110221052032](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110221052032.png)
+
+首先在 dnSpy 里查看游戏的运行库版本，.NET 3.5
+
+![image-20240110203741452](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110203741452.png)
+
+vs 创建对应版本的项目，把 UnityEnigen.dll 引进去（Assembly-CSharp.dll 也需要)
+
+![image-20240110203620354](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110203620354.png) ![image-20240110233009045](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240110233009045.png)
+
+创建两个项： `Cheat.cs` 和 `Loader.cs`，其中 `Loader.cs` 里的 `Load()` 函数是我们要注入的具体函数，其作用是向游戏加载组件 `Cheat`；`Cheat.cs` 里写具体的功能实现，用 `FixedUpdata` 来持续调用.
+
+由于我们需要篡改很多数据，在 dnSpy 里可以查看具体需要需要什么数据以及其是 public 还是 private，比如涉及到前进速度的，可在 `BirdScripts` → `forwardSpeed` 里看到 `private float forwardSpeed = 3f;`
+
+1. ##### 篡改游戏分数
+
+   监听键盘事件 `F1`：获得 `Player` 对象的 `BirdScrips` 组件，增加其 `score` 值
+
+   ```c#
+           public void FixedUpdate() {
+               if (Input.GetKeyDown(KeyCode.F1)) {
+                   var ob = UnityEngine.GameObject.FindWithTag("Player").GetComponent<BirdScripts>();
+                   if(ob != null) {
+                       ob.score = ob.score + 999;
+                   }
+               }
+           }
+   ```
+
+   > 还是游戏逻辑老问题，它这个显示出来的分数并不是实时与实际 score 挂钩的，而是在通过一个管道间隙之后再更新，因此在一个空地疯狂按 `F1` 分数是没有显示上的变化的，当然没啥大影响就是。
+
+2. ##### 移速加倍/移速减半
+
+   监听键盘事件 `F2`/`F3`：获得 `Player` 对象后，得到其 "forwardSpeed" 的私有字段值，再将修改结果设置回去.
+
+   ```c#
+               if (Input.GetKeyDown(KeyCode.F2)) {
+                   var ob = UnityEngine.GameObject.FindWithTag("Player").GetComponent<BirdScripts>();
+                   var speed = OperatePrivate.GetPrivateField<float>(ob, "forwardSpeed");
+                   OperatePrivate.SetPrivateField(ob, "forwardSpeed", speed * 2);
+               }
+   ```
+
+3. ##### 自由飞行
+
+   > 为什么做这个，因为自己去年学了点 Unity，想玩点花的，结果差点给自己玩寄了，我尽可能让操作变得丝滑（有缓冲感），本来在 Unity 里这部分可以用摩擦来做，这里我硬模拟了一个（
+   > 多个失败尝试里最抽象的一个😤，似乎 localScale 不是正常的 1，懒得管了，不做翻转了😡
+   >
+   > ![image-20240111021001318](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240111021001318.png)
+
+   监听键盘事件 `F4`：将 `ifFly` 这个 flag 取反，重力、forwardspeed什么的都根据 `ifFly` 取 $0$ 或重置，初始化水平方向、垂直方向为 $1$：
+
+   ```c#
+               if (Input.GetKeyDown(KeyCode.F4)) {
+                   ifFly = !ifFly;
+                   bird = GameObject.FindWithTag("Player").GetComponent<BirdScripts>();
+                   bird.myRigidBody.gravityScale = ifFly ? 0f : 1f;
+                   OperatePrivate.SetPrivateField(bird, "forwardSpeed", ifFly ? 0 : 3f);
+                   OperatePrivate.SetPrivateField(bird, "bounceSpeed", ifFly ? 0 : 4f);
+                   horizontal = 1;
+                   vertical = 1;
+               }
+   ```
+
+   接下来就是飞行部分，速度分 `speed_x` 和 `speed_y`，固定一个加速度 `ac`，`speed_x` 和 `speed_y` 会不停的 `+= ac * direction * -1` 来模拟阻尼感，其中 `direction` 依据速度方向取正负一，监听按键事件 WASD 直接在对应方向上加一个大幅度的 `ac * someNum`，高速加速。还有个限速系统防止飞太快。
+
+   这一部分主要对 `base.transform.positon` 操作来实现：
+
+   ```c#
+               if (ifFly) {
+                   bird = GameObject.FindWithTag("Player").GetComponent<BirdScripts>();
+                   var transform = GameObject.FindWithTag("Player").GetComponent<Transform>();
+                   Vector3 position = bird.transform.position;
+                   speed_x += ac * horizontal * -1;
+                   speed_y += ac * vertical * -1;
+                   speed_x = Math.Max(speed_x, -7f);
+                   speed_x = Math.Min(speed_x, 7f);
+                   speed_y = Math.Max(speed_y, -6f);
+                   speed_y = Math.Min(speed_y, 6f);
+                   horizontal = speed_x > 0 ? 1 : -1;
+                   vertical = speed_y > 0 ? 1 : -1;
+
+                   if (Input.GetKey(KeyCode.W)) {
+                       speed_y += ac * 3;
+                   }
+                   if (Input.GetKey(KeyCode.S)) {
+                       speed_y -= ac * 3;
+                   }
+                   if (Input.GetKey(KeyCode.A)) {
+                       speed_x -= ac * 4;
+                   }
+                   if (Input.GetKey(KeyCode.D)) {
+                       speed_x += ac * 4;
+                   }
+                   position.x += speed_x * Time.deltaTime;
+                   position.y += speed_y * Time.deltaTime;
+                   bird.transform.position = position;
+               }
+   ```
+
+4. ##### 无碰撞
+
+   监听按键事件 `F5`：对 `Player` 对象的 `Collider2D.enabled` 做操作
+
+   ```csharp
+               if (Input.GetKeyDown(KeyCode.F5)) {
+                   bird = GameObject.FindWithTag("Player").GetComponent<BirdScripts>();
+                   if (bird.GetComponent<Collider2D>().enabled) 
+                       bird.GetComponent<Collider2D>().enabled = false;             
+                   else
+                       bird.GetComponent<Collider2D>().enabled = true;
+               }
+   ```

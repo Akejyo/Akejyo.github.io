@@ -1,0 +1,30 @@
+{
+  "name": "northline",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --watch-path=src --watch-path=content --watch-path=server.js server.js --development",
+    "start": "node server.js",
+    "check": "node --check server.js && node --check src/pages.js && node --check src/content.js && node --check src/blog.js && node --check src/main.js && node --check src/collapse.js && node --check src/collapse-art.js && node --check src/story.js && node --check src/story-art.js && node --check src/story-arrival.js && node --check src/qa.js && node --check src/qa-arrival.js && node --check src/effect-events.js && node --check src/development.js && node --check src/environment.js && node --check src/record-cover.js && node --check src/persona-art.js && node --check scripts/build.mjs && node --check scripts/preview.mjs",
+    "test": "node --test tests/blog.test.js tests/collapse.test.js tests/story.test.js tests/qa.test.js tests/environment.test.js tests/record-cover.test.js",
+    "generate-art": "node scripts/generate-art.js",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/preview.mjs",
+    "test:static": "node --test tests/static.test.js"
+  },
+  "dependencies": {
+    "@mdx-js/mdx": "^3.1.1",
+    "gray-matter": "^4.0.3",
+    "katex": "0.16.47",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "rehype-katex": "^7.0.1",
+    "rehype-slug": "^6.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}

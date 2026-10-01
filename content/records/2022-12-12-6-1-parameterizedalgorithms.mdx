@@ -1,0 +1,512 @@
+---
+title: Parameterized algorithms
+date: '2022-12-12'
+categories:
+  - Study
+  - Algorithms
+tags:
+  - parameterized algorithms
+math: true
+category: Algorithms
+description: >-
+  F is the family of sets over a universe U, k is a positive integer. The task
+  is to check whether there exists a subfamily F' \subseteq F of size k that
+  covers U, which means that e
+number: '043'
+selected: false
+author: Akejyo
+importedFrom: ParameterizedAlgorithms/2022-12-12-6.1-ParameterizedAlgorithms.md
+---
+## Parameterized algorithms
+
+### 6.1.1 Parameterized algorithms
+
+#### Set Cover
+
+> parameterized algorithms 6.1.1
+
+$F$ is the family of sets over a universe $U$, $k$ is a positive integer. The task is to check whether there exists a subfamily $F' \subseteq F$ of size $k$ that covers $U$, which means that every element of $U$ belongs to some set of $F'$.
+
+**Theorem** *Given a Set Cover instance $(U,F, k)$, the minimum possible size of a subfamily $F'\subseteq F$ that covers $U$ can be found in time $2^{|U|}(|U|+|F|)^{O(1)}$.*
+
+*Proof.*  We define $T[X,j]$ as the minimum possible size of a subset $F'$ $\subseteq$ $\lbrace$ $F_{1},F_{2},...,F_{j}\rbrace$ that covers $X$. If no such subset $F'$ exists, then $T[X,j]=+\infty$. We compute all $2^{|U|}(|F|+1)$ values $T[X,j]$.
+
+* If $j=0$, $T[\emptyset,0]=0$ while $T[X,0]=+\infty$ for $X\neq 0$
+
+* else, let $X \subseteq U$ and $0\lt{j}\leq{|F|}$, we have
+  $$
+  T[X,j]=min(T[X,j-1],1+T[X/F_j,j-1])
+  $$
+
+#### Steiner Tree
+
+> parameterized algorithms 6.1.2
+>
+> [Steiner Tree in OIwiki](https://oi-wiki.org/graph/steiner-tree/)
+
+Let $G$ be an undirected graph on  $n$ vertices and $K \subseteq V(G)$ be a set of *terminals*, A *Steiner tree* for $K$ in $G$ is a connected subgraph $H$ of $G$ containing $K$, that is, $K \subseteq V(H)$.
+
+The goal of this section is to design a dynamic-programming algorithm for Stenier tree with running time $3^{|K|}n^{O(1)}$, where $n=|V(G)|$.
+
+**Lemma**   *For every $D \subseteq K$ of size at least $2$, and every $v \in V(G)\setminus K$, the following holds*
+
+$$
+T[D,v]=min\lbrace {T[D',u]+T[D\setminus D',u]+dist(v,u)}  \rbrace
+$$
+
+where $T[D,v]$ means the minimum possible weight of a Steiner tree for $D \cup \lbrace v \rbrace$ in $G$, $u\in V(G)\setminus K$ and $\emptyset$ $\neq$ $D' \subsetneq D$
+
+### 7.1 Treewidth
+
+​	该节是由**树形DP**的一个经典[题目](https://oi-wiki.org/dp/tree/)延伸而来。给你一个树，节点有权值，当你选择一个节点后，你获得该点的权值但其相邻节点不能被选，问能获得到的最大权值。
+
+> We shall call this problem **Weighted Independent Set.**
+
+​	由于树的结构特性，上述问题可以一遍 $dfs$ 跑掉，具体可以点上面的链接查看。
+
+​	那么，不是树的情况的该怎么解决呢？本节里介绍了网格图的解决方案，更具体一点，是"narrow grids"的子图。
+
+> Since the class of grids is not very broad, let us rather focus on subgraphs of grids.
+
+***
+
+下面给出一些规定，继续往下看的时候如果感到疑惑记得回来查查😵
+
+* $G$：整个图，其为 $k\times N$ 网格图的子图，$k$ 很小（比如, $k=10$），$N$很大（比如, $N=10^{6}$）
+* $(i_1, j_1)$ 和 $(i_2, j_2)$ 是相邻的当且仅当$\vert$ $i_1-i_2$ $\vert$ $+$ $\vert$ $j_1-j_2$ $\vert$ $=1$
+* $X_j$ 为图 $G$ 的第 $j$ **列**，即$X_j=V(G) \cap \lbrace (i,j):1\leq{i}\leq{k}\rbrace$
+* $G_j=G[X_1\cup X_2 \cup ... \cup X_j]$
+* 对于 $Y\subseteq X_j$, $c[j,Y]$ 为$G_j-Y$里$independent\,set$（即最上面描述的那种点集）可能的最大权值和。
+
+从规定里也能看出来，我们就是要去求$c[j,Y]$了
+
+***
+
+* 对于$j=1$的情况，暴力枚举：
+
+> For every $Y \subseteq X_1$, we iterate through all possible subsets $S\subseteq X_1 \setminus Y$ , and for each of them we check whether it is an independent set.
+
+要计算到所有的$Y$，总共的"check"次数：
+
+$$
+\sum_{\ell=0}^{|X_1|}\dbinom{|X_1|}{\ell}2^{|X_1|-\ell}=3^{|X_1|}\leq3^k
+$$
+
+上述式子要考虑选取 $Y$（枚举排列组合）和对每一个 $Y$ 的情况枚举找独立集。
+
+* 对于$j\gt {1}$的情况，$dp$去解：
+
+$$
+c[j,Y]={max}_{S\subseteq X_j \setminus Y,S\,is\, independent} \lbrace w(S)+c[j-1,N(S)\cap X_{j-1}]\rbrace
+$$
+
+这里$w(S)=\sum_{v\in S}w(v)$，注意$S$是$independent\, set$，$N(S)$为$S$在上一列的里完整网格图对应的点集（其实就是邻居），与$X_{j-1}$取交就获得了所谓上一列里我们需要的$forbidden\, set$，插点原文
+
+> Similarly, for $j = 1$, we should iterate through all the possible ways a maximum weight independent set intersects column $X_j$. This intersection should be independent, of course, and moreover if we pick some $v\in X_j \setminus Y$  to the independent set, then this choice forbids choosing its neighbor in the previous column $X_{j-1}$ (providing this neighbor exists).
+
+![treewidth](https://akejyo.github.io/treewidth.png)
+
+无论是哪种情况，计算量都在$3^k$· $k^{O(1)}$以内，最后时间复杂度$3^k$ · $k^{O(1)}$·$N$.
+
+### 7.2 Treewidth
+
+#### Path decomposition
+
+图 $G$ 的一个路径分解是一个包 $bag$ 的序列$P=(X_1,X_2,...,X_r)$，满足：
+
+$(P1)$ $\bigcup_{i=1}^{r}X_i=V(G)$，即 $G$ 的每个点都至少在一个包里.
+
+$(P2)$ 若边$(u, v)$属于$G$，那么存在一个 bag 同时包含了 $u$ 和 $v$.
+
+$(P3)$ 若 $u \in V(G)$，且$u\in X_i \cap X_k$，$i \leq k$，那么有$u\in X_j$，$i\leq {j}\leq{k}$.
+
+***
+
+* 路径分解的**宽度** $width$： ${max}_{1\leq{i}\leq{r}}$ $\vert$ $X_i$ $\vert$ $-1.$
+
+* 路径分解的**路径宽度** $pathwidth$ ，即pw($G$): the minimum possible width of a path decomposition of $G$.
+
+* $(A,B)$是一个$separation$ 当: $A \cup B=V(G)$，且在 $A \setminus B$ 和 $B\setminus A$ 之间没有边相连，这时$A\cap B$就是这个$separation$的$separator$(分隔符)，$\vert$ $A\cap B$ $\vert$称为$order$.
+
+* 对于子集 $A \subseteq V(G)$，**边界**$border$: $\partial(A)$ 由 $A$ 中拥有在 $V(G)\setminus A$ 里的邻居的点组成.
+
+> the set of those vertices of $A$ that have a neighbor in $V(G)\setminus A$
+
+***Lemma 1*** *$(\bigcup_{i=1}^jX_i,\bigcup_{i=j+1}^rX_i)$ is a $separation$ of $G$ with $separator$ $X_j\cap X_{j+1}$*
+
+​		证明可用反证法，可能会用到上面的$(P2)(P3)$.
+
+***
+
+一个路径分解是 $nice$ 的，如果遵循下面的条件：
+
+* $X_1=X_r=\emptyset$.
+* 对于每一个$i\in \lbrace 1,2,...,r-1\rbrace$，要么有一个点$v\notin X_i$且$X_{i+1}=X_i\cup \lbrace v\rbrace$（此时 $X_{i+1}$ 称为$introduce\,\,bag$, $X_{i+1}\,\,introduces\,\,v$），要么有一个点 $w\in X_i$ 且 $X_{i+1}=X_i \setminus \lbrace w\rbrace$（类似的，称为$forget\,\,bag$）.
+
+> Let us note that because of $(P3)$, every vertex of $G$ gets introduced and becomes forgotten exactly once in a nice path decomposition, and hence we have that $r$, the total number of bags, is exactly equal to $2\vertV(G)\vert+1$.
+
+***Lemma 2*** *如果 $G$ 存在宽度为 $p$ 的路径分解，那么其也存在一个 $nice$ 的宽度最大为 $p$ 的路径分解。另外，给定 $G$ 的宽度为 $p$ 的路径分解$P=(X_1,X_2,...,X_r)$，可在$O(p^2$·$max(r,\vert$ $V(G)\vert))$内求得 $nice$ 的宽度 $p$ 路径分解*
+
+***
+
+#### Tree decompositions
+
+树分解是路径分解的一个延伸
+
+图 $G$ 的一个树分解$tree\,\,decomposition$是一个pair $\mathcal T=(T,\lbrace X_t\rbrace_{t\in V(T)})$，其中 $T$ 是一个树，树的每个节点 $t$ 都分配有子点集 $X_t\subseteq V(G)$，称为包 $bag$，遵循下面规则：
+
+$(T1)$ $\bigcup_{t\in V(T)}X_t=V(G)$，即图 $G$ 的每个点都至少在一个包里.
+
+$(T2)$ 对于图 $G$ 的每一条边 $(u,v)$，都存在树 $T$ 的一个节点 $t$ 满足 $X_t$ 同时包含了 $u$ 和 $v$ .
+
+$(T3)$ 对于图 $G$ 的每一个点 $u$，集合 $T_u=\lbrace t\in V(T):u\in X_t\rbrace$，对应的包中包含 $u$ 的节点集合，就得到了 $T$ 的一个连通子树.
+
+> ​	the set of nodes whose corresponding bags contain $u$, induces a connected subtree of T.
+
+***
+
+* 树分解的**宽度**$width$：$max_{t\in V(T)}\vertX_t\vert-1$
+* 树分解的**树宽度**$treewidth$，即tw(G)：is the minimum possible width of a tree decomposition of $G$.
+
+***Lemma 3*** *设 $T$ 是图 $G$ 的一个树分解，$ab$ 是 $T$ 的一条边，那么森林 $T-ab$ 包含了两个相连的部分 $T_a(containing\,\,a)$，$T_b(containing\,\,b)$. 设 $A=\bigcup_{t\in V(T_a)}X_t$，$B=\bigcup_{t\in V(T_b)}X_t$，那么就有 $\partial(A),\partial(B)\subseteq X_a \cap X_b$，同样$(A,B)$就是图 $G$ 以 $X_a \cap X_b$为$separator$的一个$separation$.*
+
+***
+
+一个树分解是 $nice$ 的，如果满足：
+
+* $X_r=\emptyset,X_{\ell}=\emptyset$，其中 $r$ 是树 $T$ 的根，$\ell$ 是树的每一个叶子.
+* 任意不是叶子节点的节点都是下面三种类型之一：
+  * $\bold{Introduce\,\,node}$: 节点 $t$ 恰好只有一个孩子 $t'$ 且有 $X_t=X_{t'}\cup \lbrace v \rbrace$，$v\notin X_{t'}$此时我们说$v$ is $introduced$ at $t$.
+  * $\bold{Forget\,\,node}$: 节点 $t$ 恰好只有一个孩子 $t'$ 且有 $X_t=X_{t'}\setminus \lbrace w \rbrace$，$w\in X_{t'}$，此时我们说$w$ is $forgotten$ at $t$
+  * $\bold{Join\,\,node}$: 节点 $t$ 有两个孩子 $t_1,t_2$，且 $X_t=X_{t_1}=X_{t_2}$
+
+> Note also that, by property $(T3)$ of a tree decomposition, every vertex of $V(G)$ is forgotten only once, but may be introduced several times.
+
+***
+
+***Lemma 4*** *如果图 $G$ 允许一个宽度至多为 $k$ 的树分解，那么它也能做到一个宽度至多为 $k$ 的 $nice$ 树分解. 另外，给定图 $G$ 的一个宽度为 $k$ 的树分解 $\mathcal T=(T,\lbrace X_t\rbrace_{t\in V(T)})$，可以在 $O(k^2$·$max(\vertV(T)\vert$,$\vertV(G)\vert))$内求得图 $G$ 的一个宽度为 $k$ 、拥有最多 $O(k\vertV(G)\vert)$个节点的 $nice$ 树分解*
+
+### 7.3.1 WeightedIndependentSet
+
+设 $\mathcal T=(T,\lbrace X_t \rbrace_{t\in V(T)})$ 是 $n$ 节点图 $G$ 的一个树分解，宽度至多为 $k$，对于树上一节点 $t$，$t\neq r$，令 $V_t$为树 $T$ 以 $t$ 为根的子树里的包的并集，包括 $X_t$. 那么根据[**Lemma 7.3**](https://akejyo.github.io/blog/posts/2022/12/21/treewidth-7-2.html#tree-decompositions)有 $\partial(V_t)\subseteq X_t$.
+
+> This exactly formalizes the intuition that the subgraph induced by $V_t$ can communicate with the rest of the graph only via bag $X_t$, which is of small size.
+
+***
+
+​	将独立集问题与包 $X_t$ 联系起来：令图 $G$ 的两个独立集 $I_1,I_2$ 满足 $I_1\cap X_t=I_2\cap X_t$，我们把 $I_1,I_2$ 在 $V_t$ 里的点的权值加起来，并假设 **w** $(I_1\cap V_t)\gt$**w**$(I_2\cap V_t)$，那么就可以获得一个更好的方案 $I_2'$，通过把 $I_2$ 里的 $I_2 \cap V_t$ 替换成 $I_1\cap V_t$. 由前提 $I_1\cap X_t=I_2\cap X_t$ 以及结论 $\partial(V_t)\subseteq X_t$ 我们可以知道 $I_2'$ 依然是独立集，即我们从  **w** $(I_1\cap V_t)\gt$**w**$(I_2\cap V_t)$ 得到了 **w**$(I_2')$>**w**$(I_2)$
+
+​	现在问题有了些许转化. 对于一个 $S\subseteq X_t$，我们试图去找到一个**权值最大**的拓展集 $\hat{S} \supseteq S$，且有 $\hat{S} \subseteq V_t,\hat{S}\cap X_t=S$，$\hat{S}$ 还是独立集. 根据上一段讨论，我们可以知道$solution$ $I$在 $V_t$ 里的部分是可以安全替换成 $\hat{S}$ 的.
+
+> this replacement preserves independence and can only increase the weight. Observe that the number of subproblems is small: for every node $t$,  we have only $2^{|X_t|}$ subproblems. Also, we do not need to remember $\hat{S}$ explicitly; remembering its weight will suffice.
+
+​	对于每个节点 $t$（这里原文是 $node$，原文有提 $node$ 指的是树分解的树上节点）和每个 $S\subseteq X_t$，有如下定义：
+
+$$
+c[t,S]=maximum\,\,possible\,\,weight\,\,of\,\,a\,\,set\,\,\hat{S}\,\,such\,\,that
+$$
+
+$$
+\,\,S\subseteq\hat{S}\subseteq V_t,\hat{S}\cap X_t=S,and\,\,\hat{S}\,\,is\,\,independent
+$$
+
+​	如果没有这样的 $\hat{S}$ 存在（即 $S$ 不是独立集），就说 $c[t,S]=-\infty$，$c[r,{\emptyset}]$ 就是整个图 $G$ 的最大独立集（因为 $V_r=V(G)$ 且 $X_r=\emptyset$）.
+
+​	下面就来计算 $c[,]$
+
+***
+
+​	下面都是基于 $nice$ 树分解的.
+
+$\bold{Leaf\,\,node}$: $c[t,\emptyset]=0$
+
+$\bold{Introduce\,\,node}$: $t$ 是一个introdece node，其孩子节点为 $t'$，$X_t=X_{t'}\cup\{v\}$，$S$ 是 $X_t$ 的任意子集. 若 $S$ 不是独立集，有 $c[t,S]=-\infty$；否则，有以下公式：
+
+$$
+c[t,S]=
+\begin{cases} 
+c[t',S]&\text{if } v\notin S \\
+c[t',S\setminus \{v\}]+w(v)&\text{otherwise }
+\end{cases}
+$$
+
+**证明**：
+
+​	先看 $v\notin S$的情况，此时可以判断 the families of $\hat{S}$ 在 $c[t,S]$ 和 $c[t',S]$ 上是一样的（因为有 $\hat{S}\cap X_t=S$ 限制，取不到 $v$ ），显然就有 $c[t,S]=c[t',S]$；
+
+​	对于 $v\in S$ 的情况，从两个角度去看：假设 $\hat{S}$ 是基于 $c[t,S]$ 最大权值定义上的一个集合，那么就有 $\hat{S}\setminus\{v\}$ 是基于 $c[t',S\setminus\{v\}]$ 上的一个集合，且有 $c[t',S\setminus\{v\}]\ge w(\hat{S}\setminus\{v\})=w(\hat{S})-w(v)=c[t,S]-w(v)$，最后得到：
+
+$$
+c[t,S]\le c[t',S\setminus\{v\}]+w(v)
+$$
+
+​	从另一个角度，设 $\hat{S'}$ 是基于 $c[t',S\setminus \{v\}]$ 最大权值定义的一个集合. 因为 $S$ 是独立的，$v$ 不会有邻居在 $S\setminus\{v\}=\hat{S'}\cap X_{t'}$ 里，再依据 [**Lemma 7.3**](https://akejyo.github.io/blog/posts/2022/12/21/treewidth-7-2.html#tree-decompositions) 可以得到 $v$ 没有邻居在 $V_{t'}\setminus X_{t'}$（如果有邻居，那么 $v$ 作为边界的一部分是属于 $X_t\cap X_{t'}=X_{t'}$，但是 $X_{t'}$ 不含 $v$），$V_{t'}\setminus X_{t'}$ 是 $\hat{S'}\setminus X_{t'}$ 的超集. 所以 $v$ 没有邻居在 $\hat{S'}\setminus X_{t'}$ 和 $\hat{S'}\cap X_{t'}$ 里，即 $v$ 没有邻居在 $\hat{S'}$ 里， $\hat{S'}\cup\{v\}$ 是一个独立集. 由 $(\hat{S'}\cup\{v\})\cap X_t=S$，有：
+
+$$
+c[t,S]\ge w(\hat{S'}\cup\{v\})=w(\hat{S'})+w(v)=c[t',S\setminus\{v\}]+w(v)
+$$
+
+​	由$\le$和$\ge$就得出 $c[t,S]=c[t',S\setminus\{v\}]+w(v)$.
+
+​	多对照 $c[t,S]$ 的定义和 [**Lemma 7.3**](https://akejyo.github.io/blog/posts/2022/12/21/treewidth-7-2.html#tree-decompositions) 来看要容易一点.
+
+$\bold{Forget\,\,node}$: $t$ 是一个forget node，其孩子节点为 $t'$，$X_t=X_{t'}\setminus\{v\}$. $S$ 是 $X_t$ 的任意子集. 若 $S$ 不是独立集，有 $c[t,S]=-\infty$；否则有：
+
+$$
+c[t,S]=max\{c[t',S],c[t',S\cup\{v\}]\}
+$$
+
+**证明**：
+
+​	设 $\hat{S}$ 是基于 $c[t,S]$ 最大权值定义上的一个集合. 若 $v\notin \hat{S}$，那么 $\hat{S}$ 就属于 $c[t',S]$ 所要考虑的集合中的一个（可从 $c[t,S]$ 的定义分析），于是就有 $c[t',S]\ge w(\hat{S})=c[t,S]$；若 $v\in \hat{S}$，那么 $\hat{S}$ 就属于 $c[t',S\cup\{v\}]$ 所要考虑的集合中的一个，于是就有 $c[t',S\cup\{v\}]\ge w(\hat{S})=c[t,S]$. 最后得到：
+
+$$
+c[t,S]\le max\{c[t',S],c[t',S\cup\{v\}]\}
+$$
+
+​	注意到在基于 $c[t',S]$ 的定义下所要考虑到的集合 $\hat{S}$，同样也会在基于 $c[t,S]$ 和 $c[t',S\cup\{v\}]$ 的定义下被考虑，于是就有 $c[t,S]\ge c[t',S]$ 和 $c[t,S]\ge c[t'.S\cup\{v\}]$. 最后我们有：
+
+$$
+c[t,S]\ge max\{c[t',S],c[t',S\cup\{v\}]\}
+$$
+
+​	由$\le$和$\ge$就得出 $c[t,S]=max\{c[t',S],c[t',S\cup\{v\}]\}$.
+
+$\bold{Join\,\,node}$: $t$ 是一个 join node，其两个孩子 $t_1,t_2$ 满足 $X_t=X_{t_1}=X_{t_2}$，$S$ 为 $X_t$ 的任意子集；和往常一样考虑 $S$ 是一个独立集，我们有：
+
+$$
+c[t,S]=c[t_1,S]+c[t_2,S]-w(S)
+$$
+
+**证明**：
+
+​	设 $\hat{S}$ 是基于 $c[t,S]$ 最大权值定义上的一个集合. 令 $\hat{S_1}=\hat{S}\cap V_{t_1}$，$\hat{S_2}=\hat{S}\cap V_{t_2}$. 我们可以看到 $\hat{S_1}$ 是独立的且 $\hat{S_1}\cap X_{t_1}=S$，因此 $\hat{S}$ 也是基于 $c[t_1,S]$ 定义下被考虑的集合，于是就有 $c[t_1,S]\ge w(\hat{S_1})$，同样也能得到 $c[t_2,S]\ge w(\hat{S_2})$. 由于 $\hat{S_1}\cap \hat{S_2}=S$，最后可以得到：
+
+$$
+c[t,S]=w(\hat{S})=w(\hat{S_1})+w(\hat{S_2})-w(S)\le c[t_1,S]+c[t_2,S]-w(S)
+$$
+
+​	另一方面，设 $\hat{S'_1}$ 是基于 $c[t_1,S]$ 的最大权值定义上的一个集合，$\hat{S'_2}$ 也是类似. 通过[**Lemma 7.3**](https://akejyo.github.io/blog/posts/2022/12/21/treewidth-7-2.html#tree-decompositions)可以得到在 $V_{t_1}\setminus X_t$ 和 $V_{t_2}\setminus X_t$ 里的节点之间没有边相连（$separator$ 就是 $X_t$ 自己），这表明  $\hat{S'}:=\hat{S'_1}\cup\hat{S'_2}$ 是独立的（ $\hat{S'_1}$ 和 $\hat{S'_2}$ 是独立的，$V_{t_1}\setminus X_t$ 和 $V_{t_2}\setminus X_t$ 里的节点之间没有边相连，$\hat{S'_1}\subseteq V_{t_1}$，$\hat{S'_2}\subseteq V_{t_2}$，那显然两个并起来也是独立了）. 另外我们还有 $\hat{S'}\cap X_t=S$，也就是说 $\hat{S'}$ 是基于 $c[t,S]$ 所要考虑的集合之一，最后就有：
+
+$$
+c[t,S]\ge w(\hat{S'})=w(\hat{S'_1})+w(\hat{S'_2})-w(S)=c[t_1,S]+c[t_2,S]-w(S)
+$$
+
+​	由$\le$和$\ge$就得出 $c[t,S]=c[t_1,S]+c[t_2,S]-w(S)$.
+
+***
+
+现在稍做总结，算算时间
+
+> Recall that we are working on a tree decomposition of width at most $k$, which means that $\vertX_t\vert$ $\le k + 1$ for every node $t$. Thus at node $t$ we compute $2^{|X_t|} \le 2^{k+1}$ values of $c[t, S]$.
+
+> Wrapping up, for every node $t$ it takes time $2^k$· $k^{O(1)}$ to compute all the values $c[t, S]$. Since we can assume that the number of nodes of the given tree decompositions is $O(kn)$ (see Lemma 7.4), the total running time of the algorithm is $2^k$·$k^{O(1)}$·$n$.
+
+**Theorem 7.5** 给定一个有 $n$ 个节点的带权图 $G$，同时给定它的宽度至多为 $k$ 的树分解，那么 $\bold{Weighted\,\,Independent\,\,Set}$问题可以在 $2^k$·$k^{O(1)}$·$n$ 时间内完成.
+
+**Corollary 7.6** 给定一个有 $n$ 个节点的带权图 $G$，同时给定它的宽度至多为 $k$ 的树分解，那么 $\bold{Vertex\,\,Cover}$问题可以在 $2^k$·$k^{O(1)}$·$n$ 时间内完成.
+
+​	这些算法的时间复杂度上界会在第$14$章说明是被固定限制了的.
+
+### 7.3.2 Dominating Set
+
+本节我们试图去找图 $G$ 的最小[支配集](https://oi-wiki.org/graph/concept/#%E6%94%AF%E9%85%8D%E9%9B%86).
+
+​	首先对树分解进行些许变化，引入新节点 $introduce\,\,edge\,\,node$，之前的 $introduce\,\,node$ 现在叫 $introduce\,\,vertex\,\,node$.
+
+$\bold{Introduce\,\,edge\,\,node}$: a node $t$, **labeled** with an edge $uv$ ∈ $E(G)$ such that $u, v$ ∈ $X_t$, and with exactly one child $t'$ such that $X_t = X_{t'}$. We say that edge $uv$ is introduced at $t$.
+
+​	在整个树分解里，我们要求 $E(G)$ 里的每一条边都恰好被引进（$introduced$）一次. 给定一个 $nice$ 树分解，可通过下面方法去转化成我们需要的. 由 $T(3)$ 可以得到，对于一个 $nice$ 树分解，其中的每一个节点 $v$ 都存在唯一一个 $highest\,\,node$ ，记作 $t(v)$，使得 $v\in X_{t(v)}$；另外有 $X_{t(v)}$ 的父节点是一个 $forget$ 了 $v$ 的 $forget\,\,node$. 对于 $E(G)$ 中的每一个边 $uv$ ，根据 $T(2)$ 可以得到，要么 $t(u)$ 是 $t(v)$ 的祖先，要么反过来. 所以我们可以在 $t(u)$ 和其父节点之间插入一个 $introduce\,\,uv$ 的节点.
+
+> Moreover, the obtained tree decomposition still has $O(kn)$ nodes, since a graph of treewidth at most $k$ has at most $kn$ edges
+
+***
+
+​	对树分解里的每个节点 $t$ 都定义子图 $G_t$:
+
+$$
+G_t=(V_t,E_t=\{e:e\,\,\text{is}\,\,\text{introduced}\,\,\text{in}\,\,\text{the}\,\, \text{subtree}\,\,\text{rooted}\,\,\text{at}\,\,t\})
+$$
+
+​	对树分解的节点染色 $f:X_t\to \{0,\hat{0},1\}$，详细见下：
+
+* $\bold{Black}$: 代表 $1$，所有的黑色节点都必须被包含在 $G_t$ 的部分解里.
+* $\bold{White}$: 代表 $0$，所有的白色节点都不被包含在部分解里，且必须是被其支配的.
+* $\bold{Grey}$: 代表 $\hat{0}$，所有的灰色节点都不被包含在部分解里，但不必被其支配.
+
+需要强调的是，我们不会禁止灰色节点被支配，只是**不关心**它们会不会被支配.
+
+***
+
+​	$t$ 和 $f$ 的最小兼容集（$minimum\,\,compatible\,\,set$）$D\subseteq V_t$，满足：
+
+* $D\cap X_t=f^{-1}(1)$，$f^{-1}(1)$ 即 $X_t$中的黑色点集合.
+* $V_t\setminus f^{-1}(\hat{0})$ 中的每一个节点要么在 $D$ 里，要么是在 $G_t$ 里与 $D$ 中的一点相邻. 即 $D$ 支配 $V_t$ 在 $G_t$ 中的所有点，除了可能的 $X_t$ 里的灰色点.
+
+​	对于 $X_t$ 的每一个染色方案 $f$，我们用 $c[t,f]$ 来表示 $D$ 的大小. 如果对于 $t$ 和 $f$ 没有最小兼容集存在，就让 $c[t,f]=+\infty$. 注意，$G$ 的最小支配集大小就是 $c[r,\emptyset]$.
+
+​	对于子集 $X\subseteq V(G)$，考虑一个染色方案 $f:X_t\to \{0,\hat{0},1\}$. 对于节点 $v\in V(G)$ 和一个染色 $\alpha\in\{0,\hat{0},1\}$，我们按照下面去定义一个新的染色方案 $f_{v\to\alpha}:X\cup\{v\}\to\{0,\hat{0},1\}$：
+
+$$
+f_{v\to\alpha}(x)=
+\begin{cases}
+f(x)&\text{when }x\neq v,\\
+\alpha&\text{when }x=v.
+\end{cases}
+$$
+
+（就是把染色方案 $f$ 里的 $v$ 的颜色换成 $\alpha$）
+
+对于 $X$ 的一个染色方案 $f$，$Y\subseteq X$，用 $f\vert_Y$ 来表示 $f$ 对 $Y$ 的限制.
+
+（就是 $f$ 对 $Y$ 染色的部分）
+
+***
+
+​	下面来计算 $c$ 的值：
+
+$\bold{Leaf\,\,node}$: 对于一个 $leaf\,\,node$ $t$，$X_t=\emptyset$，因此 $c[t,\emptyset]=0$
+
+$\bold{Introduce\,\,vertex\,\,node}$: $t$ 是一个 $introduce\,\,node$，其孩子节点为 $t'$，$X_t=X_{t'}\cup\{v\}$ 且 $v\notin X_{t'}$.
+
+$$
+c[t,f]=
+\begin{cases}
++\infty&\text{when}\,\,f(v)=0,\\
+c[t',f\vert_{X_{t'}}]&\text{when}\,\,f(v)=\hat{0},\\
+1+c[t',f\vert_{X_{t'}}]&\text{when}\,\,f(v)=1.
+\end{cases}
+$$
+
+​	解释一下 $f(v)=0$ 的情况，由于该点是 $introduce\,\,node$，还没有没有引进边 $uv$ 到图 $G_t$ 里，因此此时的 $v$ 在图 $G_t$ 里是孤立的，又由于 $f(v)$ 是白色，你没法让 $D$ 同时满足兼容集的两个要求. 所以值为 $+\infty$.
+
+$\bold{Introduce\,\,edge\,\,node}$: $t$ 是一个 introduce edge node，标签为 $uv$，其孩子节点为 $t'$. $f$ 为 $X_t$ 的一种染色方案，$D$ 是 $f$ 和 $t$ 的最小
+
+$$
+c[t,f]=
+\begin{cases}
+c[t',f_{v\to\hat{0}}]&\text{when}\,\,(f(u),f(v))=(1,0),\\
+c[t',f_{u\to\hat{0}}]&\text{when}\,\,(f(u),f(v))=(0,1),\\
+c[t',f]&\text{otherwise}.
+\end{cases}
+$$
+
+​	按着上面对 $introduce\,\,vertex\,\,node$ 的一点解释就容易理解一点
+
+$\bold{Forget\,\,node}$: $t$ 是一个 $forget\,\,node$，其孩子为 $t'$，$X_t=X_{t'}\setminus\{v\}$ 且 $v\in X_{t'}$.
+
+$$
+c[t,f]=min\{c[t',f_{v\to 1}],c[t',f_{v\to 0}]\}
+$$
+
+$\bold{Join\,\,node}$: $t$ 是一个 $join\,\,node$，其孩子节点 $t_1$ 和 $t_2$，$X_t=X_{t_1}=X_{t_2}$，染色方案 $f_1$ 是 $X_{t_1}$ 的，$f_2$ 同理. 我们说 $f_1$ 和 $f_2$ 是对 $f$ 一致的（$consistent$），如果 $X_t$ 里的每一个节点都满足下面条件：
+
+1. $f(v)=1$ if and only if $f_1(v)=f_2(v)=1$,
+2. $f(v)=0$ if and only if $(f_1(v),f_2(v))\in\{(\hat{0},0),(0,\hat{0})\}$,
+3. $f(v)=\hat{0}$ if and only if $f_1(v)=f_2(v)=\hat{0}$.
+
+$$
+c[t,f]=min_{f_1,f_2}\{c[t_1,f_1]+c[t_2,f_2]-|f^{-1}(1)|\}
+$$
+
+​	上面的 min 是取所有对 $f$ 一致的 $f_1,f_2$.
+
+​	一方面，如果 $D$ 是对 $f$ 和 $t$ 的兼容集，且有 $f_1,f_2$ 对 $f$ 一致，那么 $D_1:=D\cap V_{t_1}$ 就是对 $f_1$ 和 $t_1$ 的兼容集，$D_2:=D\cap V_{t_2}$ 一样. 即，对 $f$ 染色里所有点 $t$ 我们让它要么在 $f_1$ 里是白色的要么在 $f_2$ 里白色的，取决于 $v$ 是否在 $G_{t_1}$ 里被 $D_1$ 支配或是在 $G_{t_2}$ 里被 $D_2$ 支配（如果被两方面支配，那任意一个选择都是合理的）. 另一方面， 如果 $D_1$ 是对 $f_1$ 和 $t_1$ 的兼容集，$D_2$ 同理，$f_1,f_2$ 对 $f$ 一致，那么就有 $D:=D_1\cup D_2$ 是对 $f$ 和 $t$ 的兼容集.
+
+对于这样的 $D_1$ 和 $D_2$，我们有 $D\cap X_t=D_1\cap X_{t_1}=D_2\cap X_{t_2}=f^{-1}(1)$，于是有 |$D$| = |$D_1$| + |$D_2$| - |$f^{-1}(1)$|.
+
+***
+
+下面算算时间：
+
+对每一个的 leaf node, introduce vertex/edge node 和 forget node 是 $3^k$· $k^{O(1)}$，计算每一个 join node 是 $4^k$· $k^{O(1)}$，由于我们假设一个 $nice$ 树分解的节点个数是 $O(kn)$，我们有下面结论：
+
+**Theorem 7.7** 给定一个 $n$ 个节点的图 $G$ 和它的宽度至多为 $k$  的树分解，$\bold{Dominating\,\,Set}$ 问题可以在 $4^k$· $k^{O(1)}$· $n$ 内完成.
+
+在第$11$章会介绍把 join node 计算时间从 $4^k$ 降到 $3^k$.
+
+### 7.3.3 Steiner Tree
+
+​	这里了解[Steiner Tree](https://akejyo.github.io/blog/posts/2022/12/12/_6-1-dynamic-programming-over-subsets.html#steiner-tree). 我们也会对图 $G$ 做一个宽度至多为 $k$ 的 $nice$ 树分解，该树分解的定义方式和 7.3.2 里的一样，即带有 $introduce\,\,edge\,\,nodes$.
+
+> Single-exponential algorithm for Steiner Tree requires more advanced techniques that will be discussed in Chapter 11.
+
+​    为了让接下来的算法更易解释，我们随机选择一个关键点 $u^{*}\in K$，并将 $u^*$ 添加到在 $\mathcal T$ 里的每一个包里. 这样处理后 $\mathcal T$ 的宽度将加一，根节点和叶子节点都是 $\{u^{*}\}$.
+
+​    做一些规定：$H$ 是连接了 $K$ 的斯坦纳树，$t$ 是 $\mathcal T$ 的节点. $H$ 在 $G_t$ 里的部分是一个有些许连通分量的森林 $F$.  由于 $H$ 是连通的且 $X_t$ 至少包含一个关键点，就会有 $F$ 里的每一个连通分量都和 $X_t$ 有交集的. 另外，$K\cap V_t$ 里的每一个关键点都应该属于 $F$ 里的某些连通分量. 对于 $X_t$ 的每一个子集 $X$ 和 $X$ 的每一个划分 $\mathcal P$，$G_t$ 里 $F$ 的最小大小有：
+
+1. $K\cap V_t\subseteq V(F)$，即 $F$ 穿过 $V_t$ 里的所有关键点，
+2. $V(F)\cap X_t=X$,
+3. $X_t$ 与 $F$ 里连通分量节点集合的交集正好形成了 $X$ 的划分 $\mathcal P$.
+
+![steinerTree1](https://akejyo.github.io/steinerTree1.png)
+
+***
+
+​	当我们引入新节点或是在 join node 时，部分解的连通分量可能会合并，因此我们需要将更新的分区跟踪到连通分量里.
+
+​	规定：对于一个包 $X_t$，集合 $X\subseteq X_t$（就上面那个 Steiner tree导出来的），$X$ 的一个划分 $\mathcal P=\{P_1,P_2,...,P_q\}$，$c[t,X,\mathcal P]$ 的值就是 $G_t$ 里 $F$ 的最少**边数**，且：
+
+* $F$ 有恰好 $q$ 个连通分量，分别为 $C_1,...,C_q$，因此对于每一个 $s\in\{1,...,q\}$，有 $P_s=V(C_s)\cap X_t$，于是就有 $\mathcal P$ 和 $F$ 的连通分量是对应的.
+* $X_t\cap V(F)=X$. 因此 $X_t\setminus X$ 与 $F$ 不相连.
+* $K\cap V_t$ 的每一个关键点都在 $V(F)$ 里.
+
+​	如果 $F$ 符合上面，就说 $F$ 是对 $(t,X,\mathcal P)$ 兼容的（$compatible$），如果没有兼容的 $F$ 存在，就让 $c[t,X,\mathcal P]=+\infty$
+
+​	最优解的 Steiner tree 即为 $c[r,\{u^*\},\{\{u^*\}\}]$，下面来计算 $c$.
+
+***
+
+$\bold{Leaf\,\, node}$: 	$t$ 是 leaf node，那么 $X_t=\{u^*\}$. 由于 $u^*\in K$，我们有 $c[t,\emptyset,\emptyset]=+\infty$，$c[t,\{u^*\},\{\{u^*\}\}]=0$
+
+$\bold{Introduce\,\,vertex\,\,node}$:  $t$ 是 introduce vertex node，其孩子 $t'$ 有 $X_t=X_{t'}\cup\{v\}$，$v\notin X_{t'}$. 由于我们还没有引入任何与 $v$ 相邻的边（考虑 introduce edge node），此时的 $v$ 在 $G_t$ 里是孤立的. 所以，对每一个集合 $X\subseteq X_t$ 和 $X$ 的划分 $\mathcal{P}=\{P_1,P_2,...,P_q\}$，我们做以下操作：如果 $v$ 是一个关键点，那么它必然是属于 $X$ 的；如果 $v$ 是属于 $X$ 的，那有 $\{v\}$ 就是 $\mathcal P$ 的一个连通分量. 如果上面的情况不能满足，那么我们让 $c[t,X,\mathcal P]=+\infty$. 否则：
+
+$$
+c[t,X,\mathcal P]=
+\begin{cases}
+c[t',X\setminus\{v\},\mathcal{P}\setminus\{\{v\}\}]&\text{it}\,\,v\in X,\\
+c[t',X,\mathcal P]&\text{otherwise}.
+\end{cases}
+$$
+
+$\bold{Introduce\,\,edge\,\,node}$: $t$ 是一个引入了边 $uv$ 的 introduce edge node，其孩子为 $t'$. 对任意的集合 $X\subseteq X_t$ 和 $X$ 的划分 $\mathcal P=\{P_1,P_2,...,P_q\}$，我们考虑以下三种情况：如果  $u\notin X$ 或者 $v\notin X$，那么我们就不能把 $uv$ 包含进正在构建的树里（因为边的一个端点不与树相连），此时 $c[t,X,\mathcal P]=c[t',X,\mathcal P]$；同样的，如果 $u$ 和 $v$ 都在 $X$ 里，但不在 $\mathcal P$ 的同一块里，结果是一样的； 如果 $u$ 和 $v$ 都在 $X$ 里且都在 $\mathcal P$ 的同一个块里，此时可以选择是否添加边 $uv$. 如果选择不添加 $uv$，那么就直接 $c[t,X,\mathcal P]=c[t',X,\mathcal P]$；如果选择添加 $uv$，那么划分 $\mathcal{P}$ 里包含了 $u$ 和 $v$ 那个块就一定是通过合并两个小一点的块得到的（一个包含了 $u$ 一个包含了 $v$）. 于是有：
+
+$$
+c[t,X,\mathcal P]=min\{min_{\mathcal{P'}}c[t',X,\mathcal{P'}]+1,c[t',X,\mathcal{P}]\}
+$$
+
+其中大括号里面那个 min，是我们考虑 $X$ 的所有 $u$ 和 $v$ 不在同一个块里的划分 $\mathcal{P'}$（否则添加 $uv$ 将会出现环）.
+
+$\bold{Forget\,\,node}$: $t$ 是一个 forget node，其孩子 $t'$ 有 $X_t=X_{t'}\setminus\{v\}$，$v\in X_{t'}$. 此时要分 $v$ 是否在 $X$ 和 $\mathcal P$ 对应的解决方案里. 如果在，那么 $v$ 就该添加到 $\mathcal P$ 已有的块里；如果不在，那就取 $t'$ 里一样的 $X$ 和 $\mathcal P$. 具体见下面式子：
+
+$$
+c[t,X,\mathcal{P}]=min\{min_{\mathcal{P'}}c[t',X\cup\{v\},\mathcal{P'}],c[t',X,\mathcal{P}]\}
+$$
+
+其中大括号里面那个 min，是我们对所有 $X\cup\{v\}$ 的划分 $\mathcal{P'}$ 所取的，注意这个 $\mathcal{P'}$ 是通过把 $v$ 添加到 $\mathcal P$ 里的一个块而得到的.
+
+$\bold{Join\,\,node}$: $t$ 是一个 join node，其孩子味 $t_1$ 和 $t_2$，$X_t=X_{t_1}=X_{t_2}$. 处理这种点其实就是去合并 $G_{t_1}$ 和 $G_{t_2}$ 所对应的部分解决方案，注意可能会出现环.
+
+![steinerTree2](https://akejyo.github.io/steinerTree2.png)
+
+​    为了避免合并时出现环，我们将介绍一种结构：对于 $X$ 的一个划分 $\mathcal P$，令 $G_{\mathcal P}$ 为一个森林，其中的连通分量恰好与 $\mathcal P$ 对应（即 $\mathcal{P}$ 里的每一块都有 $G_{\mathcal{P}}$ 里的一个树和其有相同的点集）.  如果 $G_{\mathcal {P_1}}$ 和 $G_{\mathcal{P_2}}$ 这两个森林合并后得到的森林里的连通分量恰好就是 $\mathcal P$ ，那么我们说 $\mathcal P$ 是对 $\mathcal{P_1}$ 和 $\mathcal{P_2}$ 的一个无环合并（$acylic\,\,merge$）. 于是有：
+
+$$
+c[t,X,\mathcal P]=min_{\mathcal{P_1},\mathcal{P_2}}c[t_1,X,\mathcal{P_1}]+c[t_2,X,\mathcal{P_2}]
+$$
+
+这里的 min 是对所有能满足 $\mathcal P$ 是无环合并的的 $\mathcal{P_1}$, $\mathcal{P_2}$ 对所取的.
+
+下面来估计运算时间.
+
+***
+
+​    首先回忆一下，我们这里树分解里的每一个包最大大小为 $k+2$（宽度为 $k+1$ 了），于是每一个节点的$c$ 情况会至多有 $2^{k+2}$ · $(k+2)^{k+2}=k^{O(k)}$（节点 $t$ 最多 $2^{|X_t|}$ 个子集 $X\subseteq X_t$，而 $X$ 最多 |$X$|$^{|X|}$ 个划分）. 计算一个 $c$ 需要最多考虑其他节点**对**的所有状态，需要时间 $(k^{O(k)})^2=k^{O(k)}$.
+
+**Theorem 7.8.** 给定 $n$ 个节点的图 $G$，$K\subseteq V(G)$ 为给定的关键点集合，同时又给定宽度最多为 $k$ 的树分解. 那么计算连接 $K$ 的 $Steiner\,\,tree$ 的最小边数需要 $k^{O(k)}$ · $n$.
+
+> Algorithms similar to the dynamic programming of Theorem 7.8 can be used to solve many problems in time $k^{O(k)}$ · $n^{O(1)}$. Essentially, such a running time appears for problems with connectivity requirements, since then it is natural to keep in the dynamic programming state a partition of a subset of the bag. Since the number of such partitions is at most $k^{O(k)}$, this factor appears naturally in the running time.
+
+![steinerTree3](https://akejyo.github.io/steinerTree3.png)
+
+> The main challenge for most of the problems is to understand what information to store at nodes of the tree decomposition. Obtaining formulas for forget, introduce and join nodes can be a tedious task, but is usually straightforward once a precise definition of a state is established.

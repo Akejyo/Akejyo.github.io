@@ -1,0 +1,620 @@
+---
+title: 2023·御林安全招新MISC部分
+date: '2023-10-28'
+categories:
+  - Study
+  - CTF
+tags:
+  - MISC
+  - CTF
+math: true
+image:
+  path: /img/yulin_fen.png
+  alt: ~~~
+category: CTF
+description: "单纯想学习/尝试一下 misc，就来这玩了，反正招新不带大三老屁股 \U0001F625"
+number: 029
+selected: false
+author: Akejyo
+importedFrom: CTF/2023-10-28-yulin.md
+---
+## 2023·御林安全招新 MISC 部分
+
+单纯想学习/尝试一下 misc，就来这玩了，反正招新不带大三老屁股 😥
+
+### 👋 签到
+
+![image-20230914160105073](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230914160105073.png)
+
+塞尔达语，可以直接搜到翻译器，翻译后得到
+
+```
+w l o e o
+h c f a e
+e c m t t
+e t g m ！
+```
+
+竖着两个两个读得到 `welcome_to_the_ctf_game!`
+
+***
+
+### 👾 马赛克星球
+
+![image-20230914160359527](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230914160359527.png)
+
+windows 下可以打开但是乱码，linux 无法打开，报错 crc 错误
+
+010editor 打开这个图，直接卡死（后来换了 winhex，好了
+
+![d193413db9edc42f7416c70e0e009f38](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/d193413db9edc42f7416c70e0e009f38.png)
+
+crc 校验码：`89 90 B6 35`
+
+爆破高宽试试：
+
+```python
+import os
+import binascii
+import struct
+
+crcbp = open("Recycle.png", "rb").read()    #打开图片
+for i in range(2000):
+    for j in range(2000):
+        data = crcbp[12:16] + \
+            struct.pack('>i', i)+struct.pack('>i', j)+crcbp[24:29]
+        crc32 = binascii.crc32(data) & 0xffffffff
+        if(crc32 == 0x8990b635):    #图片当前CRC
+            print(i, j)
+            print('hex:', hex(i), hex(j))
+```
+
+没得结果（，再试试 binwalk，解出代码
+
+[Binwalk 工具的详细使用说明](https://blog.csdn.net/wxh0000mm/article/details/85683661)
+
+![image-20230914163136116](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230914163136116.png)
+
+```python
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# @Time    : 2023/7/25 6:45
+# @Author  : Suzuran
+# @FileName: gen_random_pix.py
+# @Software: PyCharm
+
+from PIL import Image
+import math
+import random
+
+final_image = Image.open("base.png")
+flag_image = Image.open("flag.png")
+
+final_image_width = final_image.width
+final_image_height = final_image.height
+
+flag_image_width = flag_image.width
+flag_image_height = 156
+
+prime_li = []
+c_li = []
+
+if __name__ == '__main__':
+    a = 0
+    c = 0
+    while 1:
+        a += 1
+        if is_prime(a):
+            prime_li.append(a)
+            c += 1
+            if c > flag_image_width * flag_image_height:
+                break
+    for i in range(0, len(prime_li) - 1):
+        value = (prime_li[i] + prime_li[i + 1]) * (prime_li[i + 1] - prime_li[i])
+        if value in c_li:
+            while value in c_li:
+                value -= i
+        c_li.append(value)
+
+    k = 0
+    for num in c_li:
+        try:
+            final_image.putpixel(
+                (num % final_image_width, int(num / final_image_width)),
+                flag_image.getpixel((k % flag_image_width, int(k / flag_image_width))),
+            )
+            k += 1
+        except:
+            print(f"The num: {num} is too big")
+
+    for yy in range(0, final_image_height):
+        for xx in range(0, final_image_width):
+            if (yy * final_image_width + xx) not in c_li:
+                final_image.putpixel(
+                    (xx, yy),
+                    (
+                        random.randint(0, 255),
+                        random.randint(0, 255),
+                        random.randint(0, 255),
+                    ),
+                )
+
+    final_image.save("mosaic.png")
+
+```
+
+日，后来又试了 10000，跑出宽高了
+
+![image-20230914205322046](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230914205322046.png)
+
+修改后：
+
+![](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230914205340165.png)
+
+得到第一段 flag: `YulinSec{W1dTh_H4igHt_EasY}`
+
+尝试是否是 LSB 隐写 ×
+
+pngcheck 检查 ×
+
+继续看那段代码，看能不能反加密，改成下面这样：
+
+```py
+from PIL import Image
+import math
+import random
+
+final_image = Image.open("flag.png")
+flag_image = Image.open("base.png")
+
+final_image_width = final_image.width
+final_image_height = final_image.height
+
+flag_image_width = 38
+flag_image_height = 156
+
+prime_li = []
+c_li = []
+
+def is_prime(number):
+    if number > 1:
+        if number == 2:
+            return True
+        if number % 2 == 0:
+            return False
+        for current in range(3, int(math.sqrt(number) + 1), 2):
+            if number % current == 0:
+                return False
+        return True
+    return False
+
+
+if __name__ == '__main__':
+    a = 0
+    c = 0
+    while 1:
+        a += 1
+        if is_prime(a):
+            prime_li.append(a)
+            c += 1
+            if c > flag_image_width * flag_image_height:
+                break
+    for i in range(0, len(prime_li) - 1):
+        value = (prime_li[i] + prime_li[i + 1]) * (prime_li[i + 1] - prime_li[i])
+        if value in c_li:
+            while value in c_li:
+                value -= i
+        c_li.append(value)
+    print(len(c_li))
+    k = 0
+    cnt = 0
+    tmp = 0
+    for num in c_li:
+        try:
+            flag_image.putpixel(
+                (k % flag_image_width, int(k / flag_image_width)),
+                final_image.getpixel(((num+tmp) % final_image_width, int((num+tmp) / final_image_width))),
+            )
+            k += 1
+        except:
+            print(f"k: {k}, num: {num}")
+            print(f"The num: {num} is too big")
+            cnt = cnt + 1
+            break
+
+    flag_image.save("base_3.png")
+
+```
+
+这里 `flag_image_width` 改成 38 是因为，多次尝试后发现只有这个数字时才不会报错 num 过大
+
+得到下面的图：
+
+![image-20230918233021166](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230918233021166.png)
+
+Piet 语言解得到 flag
+
+![image-20230918233154825](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230918233154825.png)
+
+***
+
+### 🎵 绝对音感
+
+提供了一个.wav
+
+拖进 audacity，没有发现东西
+
+![image-20230917132708553](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230917132708553.png)
+
+拖到 010 里看，最后一段提示：
+
+![image-20230921223155974](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230921223155974.png)
+
+在 gpt 的帮助下写了段码：
+
+```cpp
+#include <iostream>
+#include <fstream>
+#include <vector>
+using namespace std;
+int main() {
+    std::ifstream file("tmp.wav", std::ios::binary);
+    if (!file) {
+        std::cout << "Failed to open the file." << std::endl;
+        return 1;
+    }
+
+    // Find the "data" chunk
+    char chunkID[4];
+    uint32_t chunkSize;
+    char format[4];
+    char subchunk1ID[4];
+    uint32_t subchunk1Size;
+    uint16_t audioFormat;
+    uint16_t numChannels;
+    uint32_t sampleRate;
+    uint32_t byteRate;
+    uint16_t blockAlign;
+    uint16_t bitsPerSample;
+    char subchunk2ID[4];
+    uint32_t subchunk2Size;
+
+    file.read(chunkID, 4);
+    file.read(reinterpret_cast<char*>(&chunkSize), 4);
+    file.read(format, 4);
+    file.read(subchunk1ID, 4);
+    file.read(reinterpret_cast<char*>(&subchunk1Size), 4);
+    file.read(reinterpret_cast<char*>(&audioFormat), 2);
+    file.read(reinterpret_cast<char*>(&numChannels), 2);
+    file.read(reinterpret_cast<char*>(&sampleRate), 4);
+    file.read(reinterpret_cast<char*>(&byteRate), 4);
+    file.read(reinterpret_cast<char*>(&blockAlign), 2);
+    file.read(reinterpret_cast<char*>(&bitsPerSample), 2);
+    file.read(subchunk2ID, 4);
+    file.read(reinterpret_cast<char*>(&subchunk2Size), 4);
+
+    // Read the data
+    vector<char> data;
+
+    char currentByte;
+    int flag = 0;
+    int cnt=0;
+    int cnm=0;
+    while (file.read(&currentByte, 1)) {
+        if(flag){
+            //间隔9字节读入
+            cnt++;
+            if(cnt==10){
+                cnt=0;
+                data.push_back(currentByte);
+            }
+        }
+        if(!flag && currentByte == 'D'){
+            data.push_back(currentByte);
+            flag=1;
+        }
+        cnm++;
+    }
+    cout<<cnm<<endl;
+    for (char byte : data) {
+        std::cout << byte;
+    }
+    std::cout << std::endl;
+
+    file.close();
+    return 0;
+}
+```
+
+提取信息：
+
+```
+Dear Friend ; Especially for you - this red-hot announcement
+! We will comply with all removal requests ! This mail
+is being sent in compliance with Senate bill 2116 ;
+Title 1 ; Section 303 ! This is NOT unsolicited bulk
+mail ! Why work for somebody else when you can become
+rich within 81 months . Have you ever noticed nearly
+every commercial on television has a .com on in it
+and nearly every commercial on television has a .com
+on in it . Well, now is your chance to capitalize on
+this ! We will help you deliver goods right to the
+customer's doorstep and use credit cards on your website
+! You can begin at absolutely no cost to you . But
+don't believe us . Ms Ames who resides in New Jersey
+tried us and says "Now I'm rich many more things are
+possible" ! This offer is 100% legal . So make yourself
+rich now by ordering immediately ! Sign up a friend
+and you get half off . Thanks ! Dear Salaryman ; Especially
+for you - this amazing intelligence ! If you are not
+interested in our publications and wish to be removed
+from our lists, simply do NOT respond and ignore this
+mail . This mail is being sent in compliance with Senate
+bill 2716 , Title 3 , Section 303 ! This is different
+than anything else you've seen . Why work for somebody
+else when you can become rich within 87 days . Have
+you ever noticed most everyone has a cellphone and
+society seems to be moving faster and faster . Well,
+now is your chance to capitalize on this ! WE will
+help YOU use credit cards on your website & turn your
+business into an E-BUSINESS . You can begin at absolutely
+no cost to you ! But don't believe us ! Mr Ames of
+Colorado tried us and says "I've been poor and I've
+been rich - rich is better" ! We are licensed to operate
+in all states . Do not delay - order today ! Sign up
+a friend and you'll get a discount of 50% . Thank-you
+for your serious consideration of our offer .
+```
+
+这是栅栏密码：[https://www.spammimic.com/decode.cgi](https://www.spammimic.com/decode.cgi)
+
+解得 flag `YulinSec{Wow_u_f1nD_ME}`
+
+***
+
+### 🥜 俄罗罗斯斯斯套套娃
+
+提供一个.rar，尝试解压发现里面在套娃
+
+直接 binwalk 一波，分离的众多.rar 里有一个.zip，解压需要密码
+
+![image-20231002153123700](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002153123700.png)
+
+010 打开看到有一堆 .rar，最后还有一个 65.rar（按理来说是 0 到 64），暂时不知何意
+
+![image-20231002153445593](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002153445593.png)
+
+看看是否是伪加密
+
+[zip 伪加密-CSDN 博客](https://blog.csdn.net/ETF6996/article/details/51946250)
+
+[压缩包加密破解常见方法总结 CTF 中 Misc 必备_ctf zip 密码-CSDN 博客](https://blog.csdn.net/weixin_44604541/article/details/110005372)
+
+似乎不是，都是 0B 00
+
+考虑到这个 zip 叫 Brust_it!.zip，试试爆破吧
+
+[【CTF 攻略】CTF 比赛中关于 zip 的总结 - M4x - 博客园 (cnblogs.com)](https://www.cnblogs.com/WangAoBo/p/6944477.html)
+
+6 位阿拉伯数字没有爆破出来
+
+![image-20231002160846360](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002160846360.png)
+
+字典攻击出来了
+
+![image-20231002161241845](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002161241845.png)
+
+密码就是 `password`
+
+里面是 Attack_it.zip 和一个 .txt，先看 .txt
+
+```
+「佛又曰：输婆呼迦参室度摩婆无度吉钵埵无他孕醯遮怛墀啰豆迦谨沙豆悉萨夜那佛苏吉迦摩苏数俱豆啰室俱钵佛穆数输南墀菩输南醯」
+```
+
+[与佛论禅重制版—Takuron](https://tools.takuron.top/talk-with-buddha/)
+
+这个密码不知道，可能在 Attack_it.zip 里，去看看
+
+![image-20231002162002325](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002162002325.png)
+
+```
+mad坏比怎么把Flag藏的这么隐秘，你一边想着一边将长又粗的鳗鱼卷插进出题人的嘴里，随着一阵「唔唔唔呜呜嗯嗯……」的呜咽声过去，之后再也没了动静。
+在出题人彻底昏过去前，你依稀记得最后听见的咕哝声应该是「密....钥是...是secret」，不甘心的你又搜了搜出题人的身，发现了一张字条，花了点时间，你将字条的内容输入了字条.txt中。
+「我记得这家伙是不信佛的啊？」，你吐槽了两句，并没有搜出来更多的东西，也许这已经是全部的信息了
+```
+
+既然说密钥是 `secret`，就看看是不是：
+
+![image-20231002162158762](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002162158762.png)
+
+`Wow You Get The True Secret!`
+
+`Attack_it!.zip` 里能看到有个 `secret.txt`，也许是明文攻击
+
+创建一个内容为 `Wow You Get The True Secret!` 的 `secret.txt`，再压缩
+
+用 7z 打开 secret.zip 和 Attack_it!.zip，可以发现 secret.txt 的 CRC 是一样的：
+
+![image-20231002164545442](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002164545442.png)
+
+试试明文攻击
+
+![image-20231002165435591](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002165435591.png)
+
+突然发现两个加密方式不一样，也许不对（
+
+![image-20231002170059664](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002170059664.png)
+
+弄个好压试试，也不对（
+
+bandzip 3 倍极限压缩：
+
+![image-20231002171747743](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002171747743.png)
+
+好像对了，开始攻击！
+
+![image-20231002185530906](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002185530906.png)
+
+麻了
+
+后面我又在网上看到这个图：
+
+![image-20231002224031588](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002224031588.png)
+
+```
+一般的话赛题会让你在短时间内跑出来的，但也不会太短，万一被爆破了呢。
+```
+
+合理，我来再看看我的
+
+![image-20231002224215195](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002224215195.png)
+
+还真就出来了（`[ c41b1377 6a15c141 d36ffda6 ]`
+
+解开后里面三个.exe 很怪，还打不开
+
+![image-20231002224342322](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002224342322.png)
+
+010 打开：
+
+![image-20231002224509194](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002224509194.png)
+
+不大懂（，在 cmd 窗口能运行一下看看：
+
+```
+500409004195260000006667782CCC4D378934F20CAC314F70000100090041952600000000002000006C2E742000010041F4E1D2D9CF6B0105000100000000
+4B14000B57D2002400006C2E74CD0BAEC80F8C34888A29CFA9500214000B57D200240024000000000061740A00000094D2D94E6C0130F4500600005A000000
+030008AD4E150000080061748BC94E764F4A8FCC2F0F8A37054B140008AD4E15000008000000000066677800000018006C0141F485E7D94B000001004C00
+```
+
+问出题人获得提示，这个要按 rgb 的顺序去写 zip 字节流
+
+```python
+r = "500409004195260000006667782CCC4D378934F20CAC314F70000100090041952600000000002000006C2E742000010041F4E1D2D9CF6B0105000100000000"
+g = "4B14000B57D2002400006C2E74CD0BAEC80F8C34888A29CFA9500214000B57D200240024000000000061740A00000094D2D94E6C0130F4500600005A000000"
+b = "030008AD4E150000080061748BC94E764F4A8FCC2F0F8A37054B140008AD4E15000008000000000066677800000018006C0141F485E7D94B000001004C00"
+data = ""
+for i in range(0, len(r), 2):
+    data += r[i:i+2]
+    data += g[i:i+2]
+    data += b[i:i+2]
+
+with open('flag.zip', 'wb') as f:
+	f.write(bytes.fromhex(data))
+
+```
+
+获得又一个加密的.zip
+
+010 打开，这次是伪加密了
+
+![image-20231003025839824](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231003025839824.png)
+
+![image-20231003025848852](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231003025848852.png)
+
+然后正常解压得到 `flag.txt`
+
+`YulinSec{G0od_Ra1_ZI1iP_qz_T4r_go0D}`
+
+### 😱 开盒
+
+> 对于 Picture-1，Flag 格式为 YulinSec\{md5(电子科技大学清水河校区主楼)},32 个字母全小写
+>
+> 对于 Picture-2，Flag 格式为 YulinSec\{md5(四川省成都市青羊区小南街 8 号人民公园相亲角)},32 个字母全小写
+>
+> 对于最后一问，你需要找到我是在何时拍摄了 Picture-2，Flag 格式为 YulinSec\{md5(2077 年 13 月 1 日 23 时)},32 个字母全小写
+
+1.
+
+![image-20231007182415131](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231007182415131.png)
+
+> 武汉理工大学南湖校区心至楼
+
+2.
+
+![image-20231007182428906](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231007182428906.png)
+
+先试几个
+
+> 湖北省武汉市汉阳区洗马长街 86 号禹稷行宫
+>
+> 湖北省武汉市汉阳区洗马长街 86 号晴川阁
+>
+> 湖北省武汉市汉阳区洗马长街 86 号铁门关
+>
+> 湖北省武汉市滨江大道江滩 19 号大禹神话园
+>
+> 湖北省武汉市汉阳区龟山北路 88 号龟山
+>
+> 湖北省武汉市汉阳区龟山北路 88 号龟山公园
+>
+> 湖北省武汉市汉阳区龟山北路 88 号龟山风景区
+
+我意识到题目里的 人民公园相亲角 是个包含关系，也就是说最后是两个地名
+
+同时由这俩灯的落差，感觉是上山/下山，猜测就是龟山
+
+> 湖北省武汉市汉阳区龟山北路 88 号龟山禹王宫
+>
+> 湖北省武汉市汉阳区龟山北路 88 号龟山风景区禹王宫
+>
+> 湖北省武汉市汉阳区龟山北路 88 号龟山公园禹王宫
+
+然后我去问了出题人是龟山公园还是风景区，出题人说不需要更细了
+
+> 湖北省武汉市汉阳区龟山北路 5 号龟山风景区
+
+然后猜时间了
+
+> 2023 年 10 月 05 日 18 时
+
+### ⛓️yulin-jail
+
+> 此为2024年暑假题
+
+`jail.py`
+
+```python
+MY_FLAG = 'YulinSec{fake_flag_in_local_but_really_in_The_remote}'
+BLACED_KLIST = '"%&\',-/_:;@\\`{|}~*<=>[] \t\n\r'
+
+def my_safe_check(cmd):
+    return all(ord(i) < 0x7f for i in cmd) and all(i not in cmd for i in BLACED_KLIST)
+def my_safe_eval(cmd):
+    if not my_safe_check(cmd):
+        print("Hacker!!!!")
+    else:
+        try:
+            print(type(eval(cmd, {"__builtins__": {}, "flag": MY_FLAG})))
+        except Exception as e:
+            print(f"Try again! Exception: {e}")
+
+my_safe_eval(input("Work with your flag:"))
+```
+
+基本上只能用字符串函数就弄，见下面例子
+
+```
+>>y=b'Y'
+>>y.count(89)
+1
+```
+
+通过这种方式来检测 `y` 的值是不是字符 'Y'
+
+用 `flag.join(fkag).split(flag).pop(length)`，来测试 flag 的长度，测得长度为 44
+
+假设要爆破第 `num` 位，先将其取出来 `.encode()`，然后 `.count({guess})` 猜测的 ascii 码，这个结果是 1 或 0
+
+利用已经知道的 flag 长度，将上述结果+43，尝试将 flag 的这一位 pop 出去，通过反馈信息即可知道猜测是否正确
+
+```python
+flag.join(flag).split(flag).pop(flag.join(flag).split(flag).pop({num}).encode().count({guess})+43)
+```
+
+例如第一位肯定是 'Y'
+
+```py
+flag.join(flag).split(flag).pop(flag.join(flag).split(flag).pop(0).encode().count(89)+43)
+```

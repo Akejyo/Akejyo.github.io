@@ -1,0 +1,47 @@
+#qa-panel { position:fixed;right:16px;bottom:16px;width:min(420px,calc(100vw - 32px));max-height:84vh;overflow:auto;z-index:2147483646;background:#f7f8f8;color:#202f3d;border:1px solid #8293a0;box-shadow:0 8px 36px #111c2733;padding:16px;font:12px/1.5 system-ui,sans-serif;isolation:isolate; }
+#qa-panel[hidden] { display:none; }
+#qa-panel.qa-left { left:16px;right:auto; }
+#qa-panel.qa-minimized > :not(.qa-head) { display:none; }
+#qa-panel h2 { font:600 15px/1.5 system-ui;margin:0; }
+#qa-panel h3,#qa-panel summary { font:600 12px/1.5 system-ui;letter-spacing:.04em;margin:0; }
+#qa-panel details { border-top:1px solid #cdd5da;padding:12px 0; }
+#qa-panel summary { cursor:pointer;margin-bottom:8px; }
+#qa-panel button,#qa-panel a.qa-link { display:inline-block;border:1px solid #8293a0;color:#202f3d;background:#fff;padding:7px 9px;margin:3px 3px 3px 0;font:12px/1.4 system-ui;cursor:pointer;text-decoration:none;min-height:32px; }
+#qa-panel button:disabled { opacity:.45;cursor:default; }
+#qa-panel button:focus-visible,#qa-panel a:focus-visible { outline:2px solid #486a80;outline-offset:2px; }
+#qa-panel button[aria-pressed=true] { background:#202f3d;color:#fff; }
+#qa-panel pre { white-space:pre-wrap;font:11px/1.6 monospace;background:#ebeff1;border:0;padding:8px;margin:8px 0;color:#202f3d; }
+#qa-panel .qa-head { display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap; }
+#qa-panel .qa-note { font:11px/1.5 system-ui;color:#586874;margin:8px 0; }
+#qa-panel .qa-log { height:190px;overflow:auto;resize:vertical; }
+#qa-panel .qa-stage { border:1px dashed #8293a0;margin:10px 0;padding:10px;overflow:hidden; }
+#qa-panel .qa-stage > div { min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:8px; }
+#qa-panel .qa-stage svg { width:224px;height:32px;max-width:75%; }
+#qa-panel .qa-stage .collapse-nonlinearity { width:120px;max-width:50%; }
+/* Magnify the SAME production targets. These styles are never served in production. */
+html[data-qa-exaggerate=true] .collapse-missing { x:80px;width:64px; }
+html[data-qa-exaggerate=true] .collapse-repeated > g:nth-child(4),
+html[data-qa-exaggerate=true] .collapse-repeated > g:nth-child(5) { stroke-width:3;filter:drop-shadow(0 0 1px #914b50); }
+html[data-qa-exaggerate=true] .collapse-repeat-echo { stroke:#914b50;stroke-width:3;opacity:1; }
+html[data-qa-exaggerate=true] .collapse-nonlinearity.is-static .collapse-traveller { transform:translateX(90px); }
+html[data-qa-exaggerate=true][data-collapse-level="1"] .hero-environment,
+html[data-qa-exaggerate=true][data-collapse-level="1"] .snow-field-art,
+html[data-qa-exaggerate=true][data-collapse-level="1"] .void-main::before,
+html[data-qa-exaggerate=true][data-collapse-level="1"] .blog::before { transform:translate(20px,-20px); }
+html[data-qa-exaggerate=true] .environment-memory { height:160px;opacity:.5;background-color:#b3c1cc; }
+html[data-qa-exaggerate=true]:is([data-lingering=true],[data-qa-rare=true])::view-transition-old(environment-memory) { animation:story-out 250ms ease 1500ms both; }
+html[data-qa-highlight-missing=true] .uncertain-footprints { overflow:visible; }
+.qa-footprint-marker { fill:none;stroke:#914b50;stroke-width:2;stroke-dasharray:4 3; }
+.qa-footprint-label { fill:#914b50;font:9px sans-serif; }
+.uncertain-footprints:has([data-qa-footprint-marker]) { opacity:.8!important;overflow:visible; }
+@media(prefers-reduced-motion:reduce) {
+ html[data-qa-exaggerate=true][data-collapse-level="1"] .hero-environment,html[data-qa-exaggerate=true][data-collapse-level="1"] .snow-field-art,html[data-qa-exaggerate=true][data-collapse-level="1"] .void-main::before,html[data-qa-exaggerate=true][data-collapse-level="1"] .blog::before { transform:none; }
+ html[data-qa-exaggerate=true]::view-transition-old(environment-memory) { animation:none!important; }
+}
+@media print { #qa-panel { display:none!important; } }
+/* Persona annotations exist only in this development-only stylesheet. */
+html[data-qa-persona-hit=true] .persona-cresson { outline:2px dashed #69e2eb;background:#69e2eb22; }
+html[data-qa-persona-alignment=true] .persona-candle { stroke:#f4d7b7;stroke-width:2;fill:#f4d7b733; }
+html[data-qa-persona-alignment=true] .persona-candles { opacity:1;animation:none; }
+html[data-qa-persona-alignment=true] .persona-center { outline:1px dashed #ed9db2;opacity:1; }
+html[data-qa-persona-alignment=true] .persona-flower-light { opacity:1; }

@@ -1,0 +1,84 @@
+/* Deliberately no selectors for prose, headings, links, navigation, or controls.
+   Only SVGs authored by CollapseEffect can receive masks or motion. */
+.collapse-effect {
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+  --collapse-from: 36px;
+  --collapse-to: 0px;
+  --collapse-x: 6px;
+  --collapse-y: -1px;
+  --collapse-ghost-opacity: .12;
+}
+.collapse-thread { stroke: var(--accent-blue); stroke-width: 1.2; }
+.collapse-selvedge { stroke: var(--accent-beige); stroke-width: 1.2; }
+.collapse-knot { stroke: var(--accent-red); stroke-width: 1.2; }
+.collapse-echo { opacity: 0; }
+.collapse-effect.footer-thread { --collapse-x: 21px; --collapse-y: 0px; }
+.collapse-presence { transform: none; }
+.collapse-effect.is-anomalous .collapse-thread,
+.collapse-effect.is-static .collapse-echo .collapse-thread { stroke: var(--collapse-purple); }
+.collapse-effect.is-anomalous .collapse-knot { stroke: var(--accent-red); }
+.collapse-displacement.is-anomalous .collapse-presence,
+.collapse-displacement.is-static .collapse-presence { transform: translate(var(--collapse-x), var(--collapse-y)); }
+.collapse-displacement.is-anomalous .collapse-echo,
+.collapse-displacement.is-static .collapse-echo { opacity: var(--collapse-ghost-opacity); }
+.collapse-ordinary { display: none; }
+.collapse-repeat-echo { stroke: var(--text-secondary); stroke-width: 1.1; opacity: .5; }
+.collapse-effect.is-ordinary .collapse-missing { display: none; }
+.collapse-effect.is-ordinary .collapse-ordinary { display: inline; }
+.collapse-effect.is-ordinary .collapse-repeated { display: none; }
+.collapse-ground { stroke: var(--border); stroke-width: 1; }
+.collapse-traveller { transform: translateX(var(--collapse-from)); fill: var(--text-secondary); opacity: .5; }
+.collapse-inner-trace { stroke: var(--background-primary); stroke-width: .6; }
+.collapse-nonlinearity.is-anomalous .collapse-traveller { fill: var(--collapse-purple); animation: collapse-relocation 900ms linear both; }
+@keyframes collapse-relocation {
+  0% { opacity: .5; transform: translateX(var(--collapse-from)); }
+  28% { opacity: 0; transform: translateX(var(--collapse-from)); }
+  29%, 64% { opacity: 0; transform: translateX(var(--collapse-to)); }
+  100% { opacity: .5; transform: translateX(var(--collapse-to)); }
+}
+.collapse-nonlinearity.is-static .collapse-traveller { animation: none; transform: translateX(36px); }
+.archive-edge-decoration { position: relative; height: 0; }
+.archive-anomaly { position: absolute; right: 0; bottom: 12px; width: 90px; height: 24px; }
+.about-pattern { position: relative; }
+.about-pattern > .collapse-effect { width: 224px; height: 32px; margin: 25px auto; }
+.about-cresson { position: absolute; right: 0; top: 50%; margin-top: -24px; }
+
+.cresson-flower { --cresson-ring-shift: 5.333px; display: block; overflow: visible; }
+.cresson-outer { fill: #6c6266; fill-opacity: .55; stroke: #766a70; stroke-width: .8; }
+.cresson-inner { fill: #77727b; fill-opacity: .58; }
+.cresson-eye { fill: var(--background-primary); fill-opacity: .75; }
+.cresson-rings { stroke: #716c73; stroke-width: 1.4; transform: translate(0,0); }
+.cresson-heart { fill: #746d72; fill-opacity: .24; }
+.cresson-void { fill: var(--void); }
+.cresson-cold { stroke: var(--accent-blue); stroke-width: 1.25; opacity: .45; }
+@media (hover: hover) {
+  .cresson-rings { transition: transform 2400ms ease; }
+  .cresson-heart { transition: fill 2400ms ease, fill-opacity 2400ms ease; }
+  .cresson-inner { transition: fill 2400ms ease; }
+  .cresson-flower:hover .cresson-rings { transform: translate(var(--cresson-ring-shift),0); }
+  .cresson-flower:hover .cresson-heart { fill: var(--accent-red); fill-opacity: .78; }
+  .cresson-flower:hover .cresson-inner { fill: var(--collapse-purple); }
+}
+/* Static fallback is present in CSS before JS runs and changes live with OS settings. */
+@media (prefers-reduced-motion: reduce) {
+  .collapse-effect *, .cresson-flower * { animation: none !important; transition: none !important; }
+  .collapse-displacement .collapse-presence { transform: translate(var(--collapse-x),var(--collapse-y)); }
+  .collapse-displacement .collapse-echo { opacity: .12; }
+  .collapse-nonlinearity .collapse-traveller { transform: translateX(36px); }
+  .cresson-rings, .cresson-flower:hover .cresson-rings { transform: translate(var(--cresson-ring-shift),0); }
+}
+.collapse-lab.is-static .cresson-flower * { transition: none !important; animation: none !important; }
+.collapse-lab.is-static .cresson-rings { transform: translate(var(--cresson-ring-shift),0); }
+.collapse-lab-tools { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; margin: 24px 0; }
+.collapse-samples { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
+.collapse-sample { border: 1px solid var(--border); padding: 28px; min-width: 0; }
+.collapse-sample-art { min-height: 94px; display: flex; align-items: center; justify-content: center; }
+.collapse-sample-art .collapse-effect { max-width: 100%; }
+.collapse-sample p { margin: 14px 0 20px; }
+.flower-study { grid-column: 1/-1; }
+.flower-study .cresson-flower { --cresson-ring-shift: 3.556px; width: 72px; height: 72px; }
+@media(max-width:760px) { .collapse-samples { grid-template-columns: 1fr; } }
+@media(max-width:440px) { .about-cresson { --cresson-ring-shift: 7.111px; right: -4px; width: 36px; height: 36px; margin-top: -36px; } .about-pattern > .collapse-effect { width: 192px; margin-left: 0; } }
+@media print { .collapse-effect, .cresson-flower, .collapse-lab { display: none !important; } }

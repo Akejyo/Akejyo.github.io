@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><filter id="snow" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".47" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><path fill="#fff" d="M0 0h128v128H0z" filter="url(#snow)"/></svg>

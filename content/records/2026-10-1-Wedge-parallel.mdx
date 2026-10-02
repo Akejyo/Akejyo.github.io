@@ -1,0 +1,61 @@
+---
+title: "[Reading Notes] Wedege-Parallel Triangle Counting for CPUs"
+date: "2026-10-01"
+categories:
+  - PaperNote
+tags:
+  - HPC
+math: true
+image:
+  path: /img/image-20261001214336023.png
+category: PaperNote
+description: A novel GPU algorithm--WETRIC, counting triangles in static undirected sparse graphs.
+number: "027"
+selected: false
+author: Akejyo
+---
+
+## What problem?
+
+Triangle counting for GPUs in static undirected sparse graphs.
+
+## Defects of previous solution
+
+Vertex-parallel or edge-parallel produces imbalance on each thread's workload. Some remedies may create overhead in managing and synchronizing the workload, underutilization due to many idling threads.
+
+## Core innovation
+
+**Wedge-parallel**: **(1)** excels at workload balance, the number o wedges per thread is $1$; **(2)** better spatial locality, a thread shares its search neighborhood with, on average, $\frac{d_{avg}-1}{2}$ adjacent threads.
+
+## Unresolved vulnerabilities and possible improvement
+
+1. **High preprocessing overhead.**
+   WeTriC relies heavily on preprocessing, especially degree-based graph reordering. The paper acknowledges that preprocessing can dominate the actual GPU triangle-counting time; for the Wikipedia graph, reordering alone takes about **7 seconds**, while the optimized counting phase is only about **2 seconds**. The authors also state that their preprocessing is largely unparallelized and unoptimized.
+
+   **Possible improvement:** Parallelize preprocessing on the GPU/CPU, or develop a cheaper ordering method that retains most of the reduction in wedges without requiring expensive global reordering.
+
+2. **Performance remains graph-dependent.**
+   Although wedge-level parallelism removes much of the workload imbalance, WeTriC does not dominate every competitor on every graph. For example, on WKL, Trust takes **612.76 ms** versus **809.71 ms** for WeTriC.
+
+   The authors attribute such variation partly to graph degree distributions and the effectiveness of their adjacency-matrix optimization.
+
+   **Possible improvement:** Build an adaptive/hybrid algorithm that chooses wedge-parallel, edge-parallel, hashing, or other intersection strategies according to graph characteristics.
+
+3. **Optimization parameters require graph-dependent tuning.**
+   The optimal `spread` varies among graphs, although performance generally rises until around 7 before stagnating.
+
+   Similarly, the optimal adjacency-matrix size depends on the graph's degree distribution, and some graphs do not benefit from the adjacency matrix at all.
+
+   **Possible improvement:** Automatically select parameters based on graph statistics or runtime profiling instead of relying on empirical tuning.
+
+4. **The scope is restricted to static, undirected sparse graphs and a single GPU.**
+   The stated contribution specifically targets **static undirected sparse graphs**.
+
+   Its evaluation also focuses on single-GPU execution across several NVIDIA GPUs rather than distributed/multi-GPU execution.
+
+   **Possible improvement:** Extend wedge-parallelism to **directed graphs, dynamic graphs, or multi-GPU systems**. In particular, multi-GPU WeTriC raises an interesting research question: whether its fine-grained wedge workload can be partitioned across GPUs without communication and graph-replication costs eliminating the benefit of additional parallelism.
+
+5. **Inter-warp imbalance is not fully solved.**
+   Wedge-level parallelism substantially improves intra-warp utilization, but the authors explicitly note that WeTriC **“is not able to consistently improve” inter-warp balance**.
+
+   **Possible improvement:** Combine wedge-parallelism with better block-level scheduling or dynamic workload redistribution, while keeping scheduling overhead sufficiently low.

@@ -1,6 +1,6 @@
 ---
-title: '[Note] FreeKV: Boosting KV Cache Retrieval For Efficient LLM Inference'
-date: '2026-03-16'
+title: "[Reading Notes] FreeKV: Boosting KV Cache Retrieval For Efficient LLM Inference"
+date: "2026-03-16"
 categories:
   - PaperNote
   - LLM
@@ -20,6 +20,7 @@ selected: false
 author: Akejyo
 importedFrom: LLM/2026-3-16-FreeKV.md
 ---
+
 ## Summary
 
 FreeKV, a training-free algorithm-system co-optimization framework that boosts the **efficiency of KV retrieval**, while maintaining near-lossless model accuracy across diverse scenarios.
@@ -34,10 +35,10 @@ For complex tasks involving long generation, the accuracy of KV dropping will dr
 
 This method require the complete KV cache retained, so retrieval methods often offload the KV cache to CPU memory to circumvent GPU memory limitations.
 
-* No Offload (Quest) → **out-of-memory** errors are inevitable for long contexts;
-* Offload (ArkVale, ShadowKV, InfiniGen)→ **high latency**
-  * Low bandwidth of CPU-GPU connection → $recalling$ the selected KV tuples from CPU to GPU incurs long latency;
-  * Select KV tuples from entire context → considerable $selection$ overhead.
+- No Offload (Quest) → **out-of-memory** errors are inevitable for long contexts;
+- Offload (ArkVale, ShadowKV, InfiniGen)→ **high latency**
+  - Low bandwidth of CPU-GPU connection → $recalling$ the selected KV tuples from CPU to GPU incurs long latency;
+  - Select KV tuples from entire context → considerable $selection$ overhead.
 
 ![image-20260316203135733](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20260316203135733.png)
 
@@ -61,8 +62,8 @@ FreeKV adopts page-wise selection, utilizing the min-max pooled keys within each
 
 #### Fine-Grained Correction
 
-* Correction is triggered only if $C_i\lt \tau$, where $C_i$ is the cosine similarity of query vectors and $\tau$ is predefined threshold.
-* Once the KV heads requiring correction, FreeKV initiates selection and recall for these KV heads before the attention computation. For KV heads that do not need correction, recall is deferred and overlapped with other operation.
+- Correction is triggered only if $C_i\lt \tau$, where $C_i$ is the cosine similarity of query vectors and $\tau$ is predefined threshold.
+- Once the KV heads requiring correction, FreeKV initiates selection and recall for these KV heads before the attention computation. For KV heads that do not need correction, recall is deferred and overlapped with other operation.
 
 ![image-20260316211115015](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20260316211115015.png)
 
@@ -74,8 +75,8 @@ System overview of FreeKV:
 
 ![image-20260317005722075](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20260317005722075.png)
 
-* GPU (NHD) → query vectors from the previous step, page summaries and cache for selected KV pages.
-* CPU (HND) → complete KV cache pool for offloading KV pages.
-* $double-buffering$: After a selected KV page is transferred to buffer 2, its layout conversion begins immediately, while the transfer of the next page is concurrently initiated into buffer 1
+- GPU (NHD) → query vectors from the previous step, page summaries and cache for selected KV pages.
+- CPU (HND) → complete KV cache pool for offloading KV pages.
+- $double-buffering$: After a selected KV page is transferred to buffer 2, its layout conversion begins immediately, while the transfer of the next page is concurrently initiated into buffer 1
 
 ![image-20260317010305588](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20260317010305588.png)

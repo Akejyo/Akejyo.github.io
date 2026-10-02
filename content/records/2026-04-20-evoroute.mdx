@@ -1,6 +1,6 @@
 ---
-title: '[Note] EvoRoute: Experience-Driven Self-Routing LLM Agent Systems'
-date: '2026-04-20'
+title: "[Reading Notes] EvoRoute: Experience-Driven Self-Routing LLM Agent Systems"
+date: "2026-04-20"
 categories:
   - PaperNote
 tags:
@@ -10,25 +10,26 @@ math: true
 image:
   path: /img/image-20260419184300434.png
 category: PaperNote
-description: 'performance (i.e., task success and accuracy)'
+description: "performance (i.e., task success and accuracy)"
 number: 039
 selected: false
 author: Akejyo
 importedFrom: LLM/2026-4-20-EvoRoute.md
 ---
+
 ## Agent System Trilemma
 
-* **performance** ($i.e.$, task success and accuracy)
-* **efficiency** ($i.e.$, time or steps required to complete tasks)
-* **cost** ($i.e.$., computational and monetary resources consumed)
+- **performance** ($i.e.$, task success and accuracy)
+- **efficiency** ($i.e.$, time or steps required to complete tasks)
+- **cost** ($i.e.$., computational and monetary resources consumed)
 
 ## EvoRoute
 
 A self-evolving routing paradigm that dismantles the trilemma through fine-grained model selection. Before executing each step, it dynamically selects the most judicious LLM by:
 
-* **retrieval**: performing a multifaceted retrieval to identify historically analogous sub-task executions from an evolving knowledge base;
-* **filtration**: distilling a Pareto-optimal set of candidate models, $i.e.$, those that are not dominated across the axes of cost, efficiency, and performance;
-* **selection**: leveraging a lightweight decision model to make the final selection based on this rich, context-aware statistical evidence.
+- **retrieval**: performing a multifaceted retrieval to identify historically analogous sub-task executions from an evolving knowledge base;
+- **filtration**: distilling a Pareto-optimal set of candidate models, $i.e.$, those that are not dominated across the axes of cost, efficiency, and performance;
+- **selection**: leveraging a lightweight decision model to make the final selection based on this rich, context-aware statistical evidence.
 
 ### Notations
 
@@ -36,15 +37,15 @@ $$
 \mathcal{M} = \langle \mathcal{I}, \mathcal{L}, \phi, \mathcal{S}, \mathcal{T}, \mathcal{A}, \Psi, \mu, \mathcal{Q} \rangle,
 $$
 
-* $\mathcal{M}$: the designed complex agentic AI system
-* $\mathcal{I} = \{1,2,...,N\}$: the set of agent roles ($e.g.$, web-browser, coder)
-* $\mathcal{L}$: the pool of available LLM backbones
-* $\phi:\mathcal{I}\rightarrow\mathcal{L}$
-* $\mathcal{S}$ : system state, typically implemented as a shared memory or scratchpad
-* $\mathcal{T}$: a set of external tools, such as code interpreters or web search APIs
-* $\mathcal{A}$: the full action space, including both natural language actions and tool invocations, formally $\mathcal{A}=\mathcal{A}_{lang}\cup\{\text{use\_tool}(T,args)\mid T\in\mathcal{T}\}$
-* $\Psi\{s_{t+1}\mid s_t,a_t\}$ governs the transition dynamics of the system
-* $\mu(t)\in\mathcal{I}$ selects the active agent at each time step $t$
+- $\mathcal{M}$: the designed complex agentic AI system
+- $\mathcal{I} = \{1,2,...,N\}$: the set of agent roles ($e.g.$, web-browser, coder)
+- $\mathcal{L}$: the pool of available LLM backbones
+- $\phi:\mathcal{I}\rightarrow\mathcal{L}$
+- $\mathcal{S}$ : system state, typically implemented as a shared memory or scratchpad
+- $\mathcal{T}$: a set of external tools, such as code interpreters or web search APIs
+- $\mathcal{A}$: the full action space, including both natural language actions and tool invocations, formally $\mathcal{A}=\mathcal{A}_{lang}\cup\{\text{use\_tool}(T,args)\mid T\in\mathcal{T}\}$
+- $\Psi\{s_{t+1}\mid s_t,a_t\}$ governs the transition dynamics of the system
+- $\mu(t)\in\mathcal{I}$ selects the active agent at each time step $t$
 
 ### Objective Formulation
 
@@ -52,11 +53,11 @@ $$
 \rho^* = \arg\max_\rho \left( \mathbb{E}_{\tau \sim \rho}[\mathbb{P}(\tau)], -\mathbb{E}_{\tau \sim \rho}[\mathbb{C}(\tau)], -\mathbb{E}_{\tau \sim \rho}[\mathbb{D}(\tau)] \right)
 $$
 
-* $\rho$: the dynamic routing policy that selects an LLM $l_t\in\mathcal{L}$ for the active agent at each step $t$
-* $\mathbb{P}(\tau)$: task performance
-* $\mathbb{C}(\tau)$: the cumulative monetary and computational expenditure
-* $\mathbb{D}(\tau)$: the total wall-clock execution time
-* $\tau=(s_0,a_0,s_1,a_1,...,s_T)$: the full execution trajectory of the system
+- $\rho$: the dynamic routing policy that selects an LLM $l_t\in\mathcal{L}$ for the active agent at each step $t$
+- $\mathbb{P}(\tau)$: task performance
+- $\mathbb{C}(\tau)$: the cumulative monetary and computational expenditure
+- $\mathbb{D}(\tau)$: the total wall-clock execution time
+- $\tau=(s_0,a_0,s_1,a_1,...,s_T)$: the full execution trajectory of the system
 
 ### Methodology
 
@@ -70,15 +71,15 @@ $$
 
 Each record stores:
 
-* $i_t$: active agent role,
-* $l_t$: LLM used at this step,
-* $q_t$: sub-task instruction,
-* $e_t$: embedding of the instruction,
-* $T_t$: tools used,
-* $c_t$: cost,
-* $d_t$: wall-clock duration,
-* $\sigma_t$: whether the step executed successfully,
-* $\mathbb{P}(\tau)$: final task-level success signal.
+- $i_t$: active agent role,
+- $l_t$: LLM used at this step,
+- $q_t$: sub-task instruction,
+- $e_t$: embedding of the instruction,
+- $T_t$: tools used,
+- $c_t$: cost,
+- $d_t$: wall-clock duration,
+- $\sigma_t$: whether the step executed successfully,
+- $\mathbb{P}(\tau)$: final task-level success signal.
 
 After each run:
 
@@ -101,9 +102,8 @@ When a new step arrives, EvoRoute retrieves relevant historical records from $\m
    $$
    \mathcal{K}_{\text{sem}} = \{\mathcal{R}_t \in \mathcal{K} \mid \text{sim}(\text{Embed}(q_{t'}), e_t) \geq \theta_{\text{sim}}\}
    $$
-
-   * $\text{Embed}(\cdot)$ is implemented via **MiniLM**
-   * $\theta_{\text{sim}}=0.85$
+   - $\text{Embed}(\cdot)$ is implemented via **MiniLM**
+   - $\theta_{\text{sim}}=0.85$
 
 3. Tool Congruence Retrieval
 
@@ -112,11 +112,10 @@ When a new step arrives, EvoRoute retrieves relevant historical records from $\m
    $$
 
    $\text{PredictTools}(\cdot)$ uses a two-stage predictor:
-
-   * Keyword heuristic
-     * Using a predefined dictionary to map explicit trigger keywords(e.g., "search" for $\text{web\_search}$; "run", "plot" for $\text{code\_interpreter}$)
-   * Cheap LLM fallback
-     * if heuristics fail, use Qwen3-14B in zero-shot mode
+   - Keyword heuristic
+     - Using a predefined dictionary to map explicit trigger keywords(e.g., "search" for $\text{web\_search}$; "run", "plot" for $\text{code\_interpreter}$)
+   - Cheap LLM fallback
+     - if heuristics fail, use Qwen3-14B in zero-shot mode
 
 The final candidate set:
 
@@ -134,9 +133,9 @@ $$
 
 For each candidate model $l\in\mathcal{L}_{\text{land}}$, it estimates:
 
-* average performance $\hat{P}(l)$
-* average cost $\hat{C}(l)$
-* average delay $\hat{D}(l)$
+- average performance $\hat{P}(l)$
+- average cost $\hat{C}(l)$
+- average delay $\hat{D}(l)$
 
 A model is **dominated** if another model exists that is **superior or equal on all three axes** and **strictly superior on at least one**.
 

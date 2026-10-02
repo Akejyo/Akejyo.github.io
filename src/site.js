@@ -23,7 +23,7 @@ export const expeditions = [
       "How can we efficiently count triangles in large graphs using multiple GPUs? What are the best practices for optimizing performance and scalability in this context?",
     method: "Literature review, algorithm design...",
     output: "...",
-    posts: ["2026-09-24-t-count"],
+    posts: ["2026-09-24-t-count", "2026-10-1-Wedge-parallel"],
   },
   {
     slug: "arknights-particle-simulation",

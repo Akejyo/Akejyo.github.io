@@ -1,6 +1,6 @@
 ---
 title: UDP打洞理论及实现
-date: '2023-05-07'
+date: "2023-05-07"
 categories:
   - Study
   - Linux
@@ -14,11 +14,12 @@ category: Linux
 description: >-
   NAT（Network Address
   Translation，网络地址转换），是一种在IP数据包通过路由器或防火墙时重写IP地址或目的IP地址的技术。这种技术使得多台主机可以通过一个共有IP地址访问互联网的私有网络中，解决了IPv4地址短缺的问题[2]。
-number: '053'
+number: "010"
 selected: false
 author: Akejyo
 importedFrom: udpHole/2023-5-7-UDP.md
 ---
+
 ## UDP打洞理论及实现
 
 #### 1.1 NAT简介
@@ -67,9 +68,9 @@ NAT有多种类型，类型的不同会影响到能否进行UDP打洞以及打�
 
 ![u1](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u1.png)
 
-​																				图2-1
+​ 图2-1
 
-​											（蓝色为发送的数据，括号内数字代表次序）
+​ （蓝色为发送的数据，括号内数字代表次序）
 
 在收到A,B的数据后，将ip_NA和port_NA发给B，将ip_NB和port_NB发送给A；
 
@@ -79,9 +80,9 @@ NAT有多种类型，类型的不同会影响到能否进行UDP打洞以及打�
 
 ![u2](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u2.png)
 
-​																					图2-2
+​ 图2-2
 
-​																（箭头表示发送的目标地址）
+​ （箭头表示发送的目标地址）
 
 ##### 2.2.2 一方为NAT4，一方为NAT1/NAT2
 
@@ -228,11 +229,11 @@ NAT类型为FullCone，即完全圆锥型NAT。
 
 计算机配置：
 
-设备名称  LAPTOP-C62KUAD9
+设备名称 LAPTOP-C62KUAD9
 
-处理器 AMD Ryzen 7 5800H with Radeon Graphics  3.20 GHz
+处理器 AMD Ryzen 7 5800H with Radeon Graphics 3.20 GHz
 
-系统类型  64 位操作系统, 基于 x64 的处理器
+系统类型 64 位操作系统, 基于 x64 的处理器
 
 CPU内存 16G
 
@@ -296,44 +297,44 @@ CPU -2核 内存 2GB
 
 ![u8](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u8.png)
 
-​	可以看到服务器收到了C1客户端的连接信息，并记录其IP地址和端口号，打印到终端页面里。至此，C1客户端已经将自己的通信地址信息交给服务器了，接下来是C2客户端
+​ 可以看到服务器收到了C1客户端的连接信息，并记录其IP地址和端口号，打印到终端页面里。至此，C1客户端已经将自己的通信地址信息交给服务器了，接下来是C2客户端
 
 ![u9](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u9.png)
 
-​	对应的服务器反馈：
+​ 对应的服务器反馈：
 
 ![u10](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u10.png)
 
-​	在这里我们其实还可以看到端口变化仅为1，说明是递增性。当然实验环境并不是对称性NAT，无需考虑这些。
+​ 在这里我们其实还可以看到端口变化仅为1，说明是递增性。当然实验环境并不是对称性NAT，无需考虑这些。
 
-​        C1和C2客户端都已经向服务器保留了自己的IP地址和端口号了，接下来服务器要向C1和C2客户端分别发送对方的IP地址和端口号。前往C1和C2的终端页面查看
+​ C1和C2客户端都已经向服务器保留了自己的IP地址和端口号了，接下来服务器要向C1和C2客户端分别发送对方的IP地址和端口号。前往C1和C2的终端页面查看
 
-![u11\_](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u11_.png)
+![u11_](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u11_.png)
 
-​	可以看到C1和C2客户端都从服务器收到了对方的IP地址和端口号，与服务器终端页面里显示的做比较，得出信息交接无误。
+​ 可以看到C1和C2客户端都从服务器收到了对方的IP地址和端口号，与服务器终端页面里显示的做比较，得出信息交接无误。
 
-​	接下来C1和C2客户端要直接尝试互相通信。
+​ 接下来C1和C2客户端要直接尝试互相通信。
 
 #### 4.5 C1和C2客户端打洞测试
 
-​	代码设计为C1客户端先向C2客户端发送任意数据包，虽然C2客户端会丢弃数据包，但C1客户端会保留与C2客户端的通信记录。下面是C1客户端向C2客户端的初次尝试连接：
+​ 代码设计为C1客户端先向C2客户端发送任意数据包，虽然C2客户端会丢弃数据包，但C1客户端会保留与C2客户端的通信记录。下面是C1客户端向C2客户端的初次尝试连接：
 
 ![u12](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u12.png)
 
-​	其中cB是保存的C2客户端的sockaddr_in结构体，即C2客户端的IP地址和端口号。
+​ 其中cB是保存的C2客户端的sockaddr_in结构体，即C2客户端的IP地址和端口号。
 
-​	C1客户端发送数据后直接进入等待阶段，等待来自C2客户端的主动连接：
+​ C1客户端发送数据后直接进入等待阶段，等待来自C2客户端的主动连接：
 
 ![u13](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u13.png)
 
-​	上面代码里使用while(1)循环来持续接收信息，若接收到信息就把信息打印出来，并向C2客户端反馈接收成功。
+​ 上面代码里使用while(1)循环来持续接收信息，若接收到信息就把信息打印出来，并向C2客户端反馈接收成功。
 
-​	C2客户端这边，由于C1客户端已经来打洞了，所以直接尝试连接C1客户端  :
+​ C2客户端这边，由于C1客户端已经来打洞了，所以直接尝试连接C1客户端 :
 
 ![u14](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u14.png)
 
-​	同样使用while(1)循环来持续向C1客户端发送数据及尝试接收来自C1客户端的success反馈。若成功收到，打印信息到终端。
-​	测试结果入下图
+​ 同样使用while(1)循环来持续向C1客户端发送数据及尝试接收来自C1客户端的success反馈。若成功收到，打印信息到终端。
+​ 测试结果入下图
 
 ![u15](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u15.png)
 
@@ -341,11 +342,11 @@ C1和C2客户端的打洞成功，接下来测试直接通信。
 
 #### 4.6 C1和C2客户端直接通信测试
 
-​	在C1客户端的终端里写下任意字符串，回车发送：
+​ 在C1客户端的终端里写下任意字符串，回车发送：
 
-![u16\_](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u16_.png)
+![u16_](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u16_.png)
 
-​	接下来在C2客户端的终端里直接回车接收：
+​ 接下来在C2客户端的终端里直接回车接收：
 
 ![u17](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u17.png)
 
@@ -400,20 +401,20 @@ int main(){
     struct sockaddr_in s;
     int sock;
 
-    
+
     //建立监听socket
     if((sock=socket(AF_INET,SOCK_DGRAM,0))==-1)ERR_EXIT("socket error");
     memset(&s,0,sizeof(s));
     s.sin_family=AF_INET;
     s.sin_port=htons(PORT);
     s.sin_addr.s_addr=INADDR_ANY;
-   
+
     socklen_t sock_len = sizeof(s);
-    
+
     cout<<"监听端口："<<PORT<<endl;
     //把socket描述符和一个地址类型变量绑定
     if(bind(sock,(struct sockaddr*)&s,sock_len)==-1)ERR_EXIT("bind error");
-    
+
 
     //获取C1,C2的信息
     getInfoFromClient(sock,1);
@@ -428,7 +429,7 @@ int main(){
 }
 ```
 
-***
+---
 
 #### 客户端C1
 
@@ -480,7 +481,7 @@ void sentMessageToC(int sock,socklen_t sock_len){
             cout<<"recv cB's message:"<<recvBuff<<endl;
             sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cB,sizeof(cB));
             break;
-        }    
+        }
    }
 
    //打洞成功，可以通信
@@ -516,7 +517,7 @@ int main(){
 }
 ```
 
-***
+---
 
 #### 客户端C2
 
@@ -580,7 +581,7 @@ void sentMessageToC(int sock, socklen_t sock_len){
         //向cA发送信息
         if(fgets(sendBuff,sizeof(sendBuff),stdin)!=NULL)
             sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cA,sock_len);
-        
+
         //接收cA的连接
         if(recvfrom(sock,recvBuff,sizeof(recvBuff),0,(struct sockaddr*)&cA,&sock_len)==-1)ERR_EXIT("recv error");
         cout<<"recv message From cA:"<<recvBuff<<endl;

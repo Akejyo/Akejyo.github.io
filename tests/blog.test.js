@@ -8,6 +8,47 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import rehypeCodeHighlight from '../src/rehype-code-highlight.js';
+
+process.env.PORT='0';
+const {server}=await import('../server.js');
+if(!server.listening)await once(server,'listening');
+const base=`http://127.0.0.1:${server.address().port}`;
+after(()=>new Promise(resolve=>server.close(resolve)));
+const posts=await loadPosts();
+const paths=['/','/records','/projects','/archive','/about','/void','/design-system',...posts.map(p=>'/records/'+p.slug),...expeditions.map(p=>'/projects/'+p.slug)];
+const pages=new Map();
+
+test('syntax highlighting supports requested languages and preserves exact copy text', () => {
+  const samples = {
+    c:'int main() { return 0; }', cpp:'int main() { return 0; }', 'C++':'int main() { return 0; }',
+    'C#':'public class Example {}', Python:'def hello(): return "hi"', py:'print("hi")',
+    html:'<div title="safe">Hello</div>', javascript:'const value = 1;', js:'const value = 1;', javescript:'const value = 1;',
+    css:'body { color: red; }', java:'public class Example {}', rust:'fn main() {}',
+    react:'const view = <div>Hello</div>;', jsx:'const view = <div>Hello</div>;',
+    typescript:'const value: number = 1;', tyscript:'const value: number = 1;', ts:'const value: number = 1;', tsx:'const view = <div>Hello</div>;',
+    json:'{"value": 1}', bash:'echo "$HOME"', sql:'SELECT * FROM records;', ini:'[section]\nkey=value',
+    url:'https://example.com/path?q=value#section',
+  };
+  const text = node => node.type === 'text' ? node.value : (node.children || []).map(text).join('');
+  for (const [language, sample] of Object.entries(samples)) {
+    const source = sample + '\n';
+    const code = {type:'element', tagName:'code', properties:{className:[`language-${language}`]}, children:[{type:'text',value:source}]};
+    rehypeCodeHighlight()({type:'element',tagName:'pre',children:[code]});
+    assert.ok(code.children.some(child=>child.type === 'element'), language);
+    assert.equal(text(code), source, language);
+  }
+  for (const language of ['unknown-language', '']) {
+    const code = {type:'element',tagName:'code',properties:{className:[`language-${language}`]},children:[{type:'text',value:'<script> & text'}]};
+    const before = structuredClone(code);
+    rehypeCodeHighlight()({type:'element',tagName:'pre',children:[code]});
+    assert.deepEqual(code, before);
+    code.properties.className = ['language-js'];
+    const inline = structuredClone(code);
+    rehypeCodeHighlight()({type:'element',tagName:'p',children:[code]});
+    assert.deepEqual(code, inline);
+  }
+});
 
 test('Markdown callouts preserve rich content and leave ordinary quotes and code alone', async()=>{
   const directory = await mkdtemp(join(tmpdir(), 'northline-callouts-'));
@@ -27,18 +68,12 @@ test('Markdown callouts preserve rich content and leave ordinary quotes and code
     assert.match(post.html, /<li>A list item<\/li>/);
     assert.match(post.html, /<blockquote>\s*<p>Ordinary reference<\/p>/);
     assert.match(post.html, /<blockquote>\s*<p>\[!UNKNOWN\]/);
-    assert.match(post.html, /<code class="language-md">&gt; \[!NOTE\]/);
+    assert.match(post.html, /<code class="language-md hljs">/);
+    assert.match(post.html.replace(/<[^>]*>/g,''), /&gt; \[!NOTE\]/);
   } finally { await rm(directory, { recursive:true, force:true }); }
 });
 
-process.env.PORT='0';
-const {server}=await import('../server.js');
-if(!server.listening)await once(server,'listening');
-const base=`http://127.0.0.1:${server.address().port}`;
-after(()=>new Promise(resolve=>server.close(resolve)));
-const posts=await loadPosts();
-const paths=['/','/records','/projects','/archive','/about','/void','/design-system',...posts.map(p=>'/records/'+p.slug),...expeditions.map(p=>'/projects/'+p.slug)];
-const pages=new Map();
+
 
 test('all public routes render and unknown routes return a real 404',async()=>{
   for(const path of paths){const response=await fetch(base+path);assert.equal(response.status,200,path);const html=await response.text();pages.set(path,html);assert.match(html,/<html lang="en">/);assert.match(html,/<title>[^<]+<\/title>/);if(path!=='/design-system')assert.equal((html.match(/<h1[ >]/g)||[]).length,1,path);}

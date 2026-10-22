@@ -91,3 +91,16 @@ html:not(.has-js) .copy-article { display:none; }
 .prose .article-callout-warning { --callout-color:#906300; --callout-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m12%203%2010%2018H2L12%203Zm0%205v6m0%203v1%22%2F%3E%3C%2Fsvg%3E"); }
 .prose .article-callout-important { --callout-color:#7542c7; --callout-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%203h14a2%202%200%200%201%202%202v12H10l-5%204v-4H3V5a2%202%200%200%201%202-2Zm7%204v5m0%202v1%22%2F%3E%3C%2Fsvg%3E"); }
 .prose .article-callout-caution { --callout-color:#c52338; --callout-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m8%202-6%206v8l6%206h8l6-6V8l-6-6H8Zm4%204v8m0%203v1%22%2F%3E%3C%2Fsvg%3E"); }
+
+/* Syntax colors scoped to fenced article code; layout and inline code are unchanged. */
+.prose pre .hljs { color:var(--text-primary); }
+.prose pre .hljs-comment,.prose pre .hljs-quote { color:#586873; }
+.prose pre .hljs-keyword,.prose pre .hljs-selector-tag,.prose pre .hljs-doctag { color:#86435e; }
+.prose pre .hljs-string,.prose pre .hljs-regexp,.prose pre .hljs-addition { color:#326343; }
+.prose pre .hljs-number,.prose pre .hljs-literal,.prose pre .hljs-symbol,.prose pre .hljs-bullet { color:#79532e; }
+.prose pre .hljs-title,.prose pre .hljs-section,.prose pre .hljs-selector-class,.prose pre .hljs-selector-id { color:#285e83; }
+.prose pre .hljs-attr,.prose pre .hljs-attribute,.prose pre .hljs-property,.prose pre .hljs-type,.prose pre .hljs-built_in { color:#655084; }
+.prose pre .hljs-name,.prose pre .hljs-tag,.prose pre .hljs-meta { color:#386674; }
+.prose pre .hljs-deletion { color:#923e44; }
+.prose pre .hljs-emphasis { font-style:italic; }
+.prose pre .hljs-strong { font-weight:700; }

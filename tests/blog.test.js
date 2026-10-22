@@ -4,6 +4,32 @@ import { once } from 'node:events';
 import { loadPosts } from '../src/content.js';
 import { expeditions } from '../src/site.js';
 import { readFile } from 'node:fs/promises';
+import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+test('Markdown callouts preserve rich content and leave ordinary quotes and code alone', async()=>{
+  const directory = await mkdtemp(join(tmpdir(), 'northline-callouts-'));
+  try {
+    const types = ['TIP','NOTE','WARNING','IMPORTANT','CAUTION'];
+    const variants = types.flatMap(type=>[type, type.toLowerCase(), type[0] + type.slice(1).toLowerCase()]);
+    const body = variants.map(type=>`> [!${type}]\n> A **bold** message with [a link](https://example.com).\n>\n> - A list item`).join('\n\n');
+    await writeFile(join(directory,'callouts.mdx'), `---\ntitle: Callouts\nnumber: "999"\ndate: "2026-10-22"\ncategory: Test\ndescription: Callout fixture\n---\n${body}\n\n> Ordinary reference\n\n> [!UNKNOWN]\n> Unchanged\n\n\`\`\`md\n> [!NOTE]\n\`\`\`\n\n> [!NOTE]\n> Nested:\n>\n> > [!TIP]\n> > Inside\n`);
+    const [post] = await loadPosts(pathToFileURL(directory + '/'));
+    for (const type of types) {
+      const count = (post.html.match(new RegExp(`class="article-callout article-callout-${type.toLowerCase()}"`, 'g')) || []).length;
+      assert.equal(count, type === 'TIP' || type === 'NOTE' ? 4 : 3, type);
+    }
+    assert.equal((post.html.match(/class="article-callout-title"/g)||[]).length,17);
+    assert.match(post.html, /<strong>bold<\/strong>/);
+    assert.match(post.html, /<a href="https:\/\/example.com">a link<\/a>/);
+    assert.match(post.html, /<li>A list item<\/li>/);
+    assert.match(post.html, /<blockquote>\s*<p>Ordinary reference<\/p>/);
+    assert.match(post.html, /<blockquote>\s*<p>\[!UNKNOWN\]/);
+    assert.match(post.html, /<code class="language-md">&gt; \[!NOTE\]/);
+  } finally { await rm(directory, { recursive:true, force:true }); }
+});
 
 process.env.PORT='0';
 const {server}=await import('../server.js');

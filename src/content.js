@@ -9,6 +9,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeSlug from 'rehype-slug';
+import remarkCallouts from './remark-callouts.js';
 
 function Figure({ src, alt, caption, width=1200, height=700 }) {
   return h('figure', null, h('img', { src, alt, loading: 'lazy', width, height }), h('figcaption', null, caption));
@@ -21,7 +22,7 @@ export async function loadPosts(directory = new URL('../content/records/', impor
     const { data, content } = matter(raw);
     for (const key of ['title','date','category','description','number']) if (!data[key]) throw new Error(`${file}: missing ${key}`);
     const slug = file.slice(0,-4);
-    const { default: Content } = await evaluate(content, {...runtime, remarkPlugins:[remarkGfm,remarkMath],rehypePlugins:[rehypeKatex,rehypeSlug]});
+    const { default: Content } = await evaluate(content, {...runtime, remarkPlugins:[remarkGfm,remarkMath,remarkCallouts],rehypePlugins:[rehypeKatex,rehypeSlug]});
     const html = renderToStaticMarkup(h(Content, {components:{Figure, table:Table}})).replace(/(<img[^>]*\bsrc=")([^"]+)(")/g, (match,before,src,after)=>before+(imageAssets[src.replaceAll('&amp;','&')]||src)+after);
     const plain = html.replace(/<[^>]*>/g,' ');
     const readingTime = Math.max(1,Math.ceil(plain.split(/\s+/).filter(Boolean).length/220));

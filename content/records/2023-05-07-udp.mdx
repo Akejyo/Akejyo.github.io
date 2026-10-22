@@ -118,8 +118,6 @@ The first packet is not always dropped. For example, a full-cone NAT can accept 
 
 ##### 2.2.2 One Client Uses NAT4; the Other Uses NAT1 or NAT2
 
-> Correction: The original report said that the NAT1/NAT2 client must perform hole punching. A more precise explanation is that the NAT1/NAT2 client provides a stable public endpoint, while the NAT4 client sends a packet to it so that its actual public endpoint can be discovered.
-
 Suppose A uses NAT4 and B uses NAT2:
 
 ```text
@@ -155,8 +153,6 @@ The original proposal uses clients A and B and public servers C and D:
 Two observations alone cannot establish a reliable allocation rule. Other network traffic can consume ports between probes, and a NAT may use different allocation rules for different destinations. A successful prediction is therefore a possibility, not a guarantee. See [RFC 5128, Section 3.5](https://www.rfc-editor.org/rfc/rfc5128.html#section-3.5).
 
 **Trying many ports: the birthday-paradox idea**
-
-> Correction: Guessing one unknown port 439 times does not give a 95% chance of success. The original report mixed up guessing one specific value with finding a match among many values.
 
 Assume, for a simplified calculation, that about 64,512 ports are possible and equally likely.
 

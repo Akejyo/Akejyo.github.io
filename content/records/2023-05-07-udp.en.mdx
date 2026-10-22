@@ -1,0 +1,703 @@
+---
+title: UDP Hole Punching: Theory and Implementation
+date: "2023-05-07"
+categories:
+  - Study
+  - Linux
+tags:
+  - socket
+  - Linux
+image:
+  path: /img/u1.png
+  alt: UDP hole punching diagram
+category: Linux
+description: >-
+  An easy-to-follow introduction to UDP hole punching, NAT behavior, and a
+  simple C++ implementation on Linux.
+number: "010"
+selected: false
+author: Akejyo
+importedFrom: udpHole/2023-5-7-UDP.md
+---
+
+## UDP Hole Punching: Theory and Implementation
+
+### Chapter 1: Background
+
+#### 1.1 What Is NAT?
+
+NAT stands for Network Address Translation. A router that uses NAT rewrites IP addresses, and often port numbers, as packets pass through it.
+
+This allows several devices on a private network to share one public IPv4 address. It helps reduce the demand for public IPv4 addresses.
+
+For example, your laptop may have a private address that other devices on the Internet cannot reach directly. When it sends a packet, the router replaces that private source address with a public address and records how to send replies back to the laptop.
+
+#### 1.2 What Is P2P?
+
+P2P stands for peer-to-peer. In a P2P system, devices communicate directly with each other rather than sending all their application data through a central server.
+
+A server may still help the devices find each other and exchange connection information.
+
+#### 1.3 UDP
+
+##### 1.3.1 What Is UDP?
+
+UDP stands for User Datagram Protocol. It sends data as separate packets, called datagrams. It does not guarantee that packets will arrive or arrive in order.
+
+UDP is useful for applications that need low delay and can tolerate some packet loss.
+
+##### 1.3.2 Why Do We Need UDP Hole Punching?
+
+NAT devices maintain mappings between private and public addresses and ports. They may also filter incoming packets based on which external addresses the internal device has contacted.
+
+Suppose device A and device B are behind different NAT routers. If A sends a packet to B's public address, B's router may have no mapping for the destination port, or its filtering rules may reject A's packet.
+
+UDP hole punching helps both devices create the mappings and permissions needed for direct communication. A public server usually helps them exchange their public addresses and ports first.
+
+### Chapter 2: System Analysis
+
+#### 2.1 NAT Types
+
+NAT behavior affects whether UDP hole punching can work and which steps are needed.
+
+Two ideas are especially important:
+
+- **Mapping:** Which public IP address and port does an outgoing packet use?
+- **Filtering:** Which external devices are allowed to send packets back through that mapping?
+
+Suppose internal host A sends a packet from `A:Port_A` to external host `B:Port_B`. Its NAT translates the source into a public address and port, written here as `NAT:Port_nat`.
+
+This report uses the following traditional NAT categories. The numbers NAT1 through NAT4 are labels used in this report, not universal naming rules.
+
+1. **Full-cone NAT (NAT1).** Once the mapping exists, any external host can send packets to `NAT:Port_nat`, and the NAT forwards them to `A:Port_A`.
+2. **Address-restricted cone NAT (NAT2).** Only external IP addresses that A has already sent packets to can send packets back. Their source ports do not have to match the ports A contacted.
+3. **Port-restricted cone NAT (NAT3).** Only an external IP address and port that A has already contacted can send packets back.
+4. **Symmetric NAT (NAT4).** The public mapping depends on the destination. Sending from the same internal socket to a different external destination may create a different public mapping. In the traditional model used here, each mapping accepts replies only from the external endpoint associated with it.
+
+For NAT1–NAT3, an active mapping from one internal socket is normally reused across different destinations. For NAT4, the server and the peer may see different public source ports for that same socket.
+
+For example:
+
+```text
+Internal A:5000 → server S:3478 → public source A_public:40000
+Internal A:5000 → peer   B:6000 → public source A_public:40001
+```
+
+The mapping to the server can remain active while the mapping to B is created. NAT4 does not necessarily change the source port for every packet: packets sent to the same destination normally reuse an existing mapping.
+
+Real NAT devices can behave in ways that do not fit neatly into these four categories. Modern terminology describes mapping and filtering separately. See [RFC 4787](https://www.rfc-editor.org/rfc/rfc4787.html).
+
+#### 2.2 UDP Hole-Punching Methods
+
+Let A and B be the clients, and S be a public server. Each client is behind its own NAT.
+
+- A's internal endpoint is `ip_A:port_A`; the server sees it as `ip_NA:port_NA`.
+- B's internal endpoint is `ip_B:port_B`; the server sees it as `ip_NB:port_NB`.
+
+An **endpoint** simply means an IP address together with a port number.
+
+##### 2.2.1 Both Clients Are Behind Cone NATs
+
+1. A sends a UDP packet to S. S records the public source IP address and port it observes. B does the same.
+2. S sends A's public endpoint to B and B's public endpoint to A.
+
+![Clients register with the public server](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u1.png)
+
+Figure 2-1. The blue arrows show packets being sent. Numbers in parentheses show their order.
+
+3. A sends a packet to B's public endpoint. If B's NAT does not yet allow packets from A, it drops the packet. However, A's outgoing packet creates or updates the state needed to allow a reply from B.
+4. B sends a packet to A's public endpoint. A can now receive it. A replies, and B can receive that reply because B has also sent a packet to A.
+
+The clients can then exchange UDP packets directly.
+
+![The clients send packets directly to each other](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u2.png)
+
+Figure 2-2. The arrows show the destination of each transmission.
+
+The first packet is not always dropped. For example, a full-cone NAT can accept it as soon as the mapping exists. Repeated probes are also useful because packets may be lost or arrive before the other client is ready.
+
+##### 2.2.2 One Client Uses NAT4; the Other Uses NAT1 or NAT2
+
+> Correction: The original report said that the NAT1/NAT2 client must perform hole punching. A more precise explanation is that the NAT1/NAT2 client provides a stable public endpoint, while the NAT4 client sends a packet to it so that its actual public endpoint can be discovered.
+
+Suppose A uses NAT4 and B uses NAT2:
+
+```text
+The server sees A as A_public:40000.
+The server sees B as B_public:50000.
+```
+
+1. B sends a packet to A's reported public endpoint. This packet may be dropped by A's NAT, but it tells B's NAT2 to allow incoming packets from A's public IP address.
+2. A sends a packet to `B_public:50000`. A's NAT4 may create a new mapping, so the packet arrives from `A_public:40001` instead of `A_public:40000`.
+3. B's NAT2 accepts the packet because its filtering rule checks A's IP address, not A's source port.
+4. B reads the packet's actual source endpoint using `recvfrom()` and replies to `A_public:40001` from the same socket.
+5. A accepts the reply because it has already sent a packet to `B_public:50000` through that mapping.
+
+If B uses NAT1, step 1 is unnecessary once B's public mapping exists.
+
+The key is that B replies to the endpoint it actually receives a packet from, rather than continuing to use A's old endpoint reported by the server.
+
+##### 2.2.3 One Client Uses NAT4; the Other Uses NAT3 or NAT4
+
+This case is harder. A NAT3 client checks both the source IP address and source port. If A's NAT4 changes the source port from the one reported by the server, B's NAT3 may reject A's packet.
+
+There are two different approaches to consider: predicting ports and trying many possible ports.
+
+**Port prediction**
+
+The original proposal uses clients A and B and public servers C and D:
+
+1. A sends a packet to C. C reports A's observed public port.
+2. A sends a packet to D and includes the port reported by C. D compares it with the source port it observes.
+3. If the NAT appears to allocate ports sequentially, the clients may try likely future ports.
+4. A and B exchange candidate endpoints through the servers and send probes to them.
+
+Two observations alone cannot establish a reliable allocation rule. Other network traffic can consume ports between probes, and a NAT may use different allocation rules for different destinations. A successful prediction is therefore a possibility, not a guarantee. See [RFC 5128, Section 3.5](https://www.rfc-editor.org/rfc/rfc5128.html#section-3.5).
+
+**Trying many ports: the birthday-paradox idea**
+
+> Correction: Guessing one unknown port 439 times does not give a 95% chance of success. The original report mixed up guessing one specific value with finding a match among many values.
+
+Assume, for a simplified calculation, that about 64,512 ports are possible and equally likely.
+
+If there is only **one fixed unknown port**, 439 independent random guesses have a success probability of only about **0.68%**.
+
+The useful birthday-paradox idea is to create **many active mappings** and then try **many candidate ports**. A match between the two sets may provide a usable path.
+
+For example, suppose A uses NAT4 and B uses NAT3:
+
+1. B keeps one UDP socket with a stable public endpoint.
+2. A uses many different local UDP sockets to send packets to that endpoint. This creates a set of public mappings on A's NAT. Each mapping allows replies from B's endpoint.
+3. B sends probes from its same socket to many candidate ports on A's public IP address.
+4. If a probe reaches one of A's active mappings, A receives it and replies using the socket that received it.
+5. B can accept that reply because it has just sent a probe to that exact source endpoint.
+
+In an idealized random model, with `m` active mapping ports, `n` independent random guesses, and `N` possible ports, the probability of at least one match is approximately:
+
+```text
+P ≈ 1 − exp(−m × n / N)
+```
+
+With about 440 distinct active mappings and about 440 random guesses, this model gives a success probability close to 95% when `N ≈ 64,512`.
+
+That is very different from making 439 guesses against one mapping. The estimate also assumes that mappings stay active, the public IP remains the same, and the NAT allows enough mappings and traffic. Real results can differ substantially.
+
+If **both clients use NAT4**, the problem is harder still. Probing a new destination port may also change the sender's public source port. A numerical port match alone does not ensure that the incoming packet passes filtering: each side needs a mapping that permits the other side's actual endpoint. The simple NAT4-to-NAT3 calculation above cannot be applied directly to two NAT4 clients.
+
+### Chapter 3: Design and Implementation
+
+#### 3.1 Language and Environment
+
+I chose C++ because I was familiar with it. I used an Ubuntu virtual machine and Linux socket APIs to implement the experiment.
+
+#### 3.2 Checking the NAT Type
+
+![NAT type test result](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u3.png)
+
+I used NatTypeTester to check the network environment. It reported **FullCone**, or full-cone NAT.
+
+Full-cone NAT places relatively few restrictions on incoming packets. This makes the basic experiment easier, but it does not test the more difficult NAT combinations described earlier.
+
+#### 3.3 Basic Linux Socket APIs
+
+**1. Create a socket**
+
+```c++
+int socket(int family, int type, int protocol);
+```
+
+- `family`: The address family. This experiment uses `AF_INET` for IPv4.
+- `type`: The socket type. This experiment uses `SOCK_DGRAM` for UDP.
+- `protocol`: Set to `0` to use the default protocol for the chosen socket type.
+
+**2. Store an IPv4 address and port**
+
+The following simplified structure is defined in `netinet/in.h`:
+
+```c++
+struct sockaddr_in {
+    short sin_family;        // Address family: AF_INET
+    unsigned short sin_port; // Port number in network byte order
+    struct in_addr sin_addr; // IPv4 address
+    char sin_zero[8];        // Padding
+};
+```
+
+The address is stored in `struct in_addr`. On Linux, its address field is declared using `in_addr_t`:
+
+```c++
+struct in_addr {
+    in_addr_t s_addr; // IPv4 address in network byte order
+};
+```
+
+Functions such as `inet_pton()` can convert a text address into its binary form.
+
+**3. Send a UDP packet**
+
+```c++
+ssize_t sendto(int s, const void *buf, size_t len, int flags,
+               const struct sockaddr *to, socklen_t tolen);
+```
+
+The arguments specify the socket, the data buffer, the number of bytes to send, flags (`0` here), the destination address, and the size of the destination address structure.
+
+**4. Receive a UDP packet**
+
+```c++
+ssize_t recvfrom(int s, void *buf, size_t len, int flags,
+                 struct sockaddr *from, socklen_t *fromlen);
+```
+
+The arguments specify the socket, the receive buffer, its capacity, flags (`0` here), a structure for the sender's address, and a pointer to the size of that structure.
+
+An important feature is that `recvfrom()` reports the packet's actual source IP address and port. The public server uses this to discover each client's public endpoint. A client can also use it to learn a peer's actual endpoint.
+
+**5. Bind a socket to a local address**
+
+```c++
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+```
+
+The arguments are the socket, the local address structure, and its size.
+
+The client programs below do not explicitly call `bind()`. The operating system assigns a local port when each socket first sends a packet.
+
+#### 3.4 Server
+
+1. Create a UDP socket.
+2. Bind it to the server's listening address and port.
+3. Wait for packets from clients C1 and C2. Record their source endpoints and acknowledge each packet.
+4. Send C1's endpoint to C2 and C2's endpoint to C1.
+5. Close the server socket.
+
+After this exchange, the clients attempt to communicate directly.
+
+#### 3.5 Client C1
+
+1. Create a UDP socket.
+2. Send a registration packet to the server and wait for its acknowledgement.
+3. Receive C2's public IP address and port from the server.
+4. Send a probe to C2. It may be dropped, but the outgoing packet creates the state needed to accept a reply.
+5. Wait for a packet from C2 and reply to it.
+6. Exchange application messages directly with C2.
+
+#### 3.6 Client C2
+
+1. Create a UDP socket.
+2. Register with the server and receive its acknowledgement.
+3. Receive C1's public IP address and port.
+4. Wait briefly, then send a probe to C1.
+5. Receive C1's reply. The clients can now exchange messages directly.
+
+Here, “connected” means that the clients have successfully exchanged UDP packets. UDP itself does not perform a connection handshake like TCP.
+
+#### 3.7 Implementation Details
+
+**Sending endpoint information**
+
+The example stores IP addresses and ports in `sockaddr_in` structures and sends their raw bytes to the other client. `sendto()` and `recvfrom()` work with bytes; their data does not have to be a text string.
+
+Casting a structure pointer to `char*` does not convert the structure into a portable text format. Sending raw structures is a shortcut for a controlled experiment. A portable protocol should encode the address and port explicitly.
+
+There is also a length error in the original server code: it sends `sizeof(buff)` bytes from a `sockaddr_in` object. The length should be `sizeof(C[1])` or `sizeof(C[2])`, as appropriate. The historical listing below preserves the original logic and this error; the translation does not claim that the code is ready for use.
+
+**Reporting errors**
+
+The `ERR_EXIT(message)` macro prints an error and exits. For example, if `socket()` returns `-1`, the program calls `ERR_EXIT("sock error")`. The message helps identify which operation failed.
+
+**Overall sequence**
+
+1. The server receives C1's registration packet and acknowledges it.
+2. The server receives C2's registration packet and acknowledges it.
+3. The server sends each client the other client's endpoint.
+4. C1 sends a probe to C2 and waits.
+5. C2 sends a probe to C1 after a short delay.
+6. C1 receives the probe and replies.
+7. C2 receives the reply. The basic hole-punching exchange is complete.
+
+The original design discussion described acknowledgements for the endpoint exchange as well. The supplied code does not implement those additional acknowledgements.
+
+Also, C2's `recvfrom()` call is blocking. Although it is inside a loop, the program will not keep sending probes if no reply arrives. Reliable retries require a receive timeout or another way to avoid waiting indefinitely.
+
+### Chapter 4: Testing
+
+#### 4.1 Hardware
+
+The experiment used a laptop with the following specifications:
+
+| Item | Specification |
+| --- | --- |
+| Device name | LAPTOP-C62KUAD9 |
+| Processor | AMD Ryzen 7 5800H with Radeon Graphics, 3.20 GHz |
+| System type | 64-bit operating system, x64-based processor |
+| Memory | 16 GB |
+
+#### 4.2 Client Environment
+
+| Item | Configuration |
+| --- | --- |
+| Operating system | Ubuntu 22.10 virtual machine |
+| Virtual memory allocation | 4 GB |
+| Virtual CPU cores | 4 |
+| Network adapter | NAT mode, with a fixed guest IP address |
+| Editor | Visual Studio Code |
+
+#### 4.3 Server Environment
+
+The public server was a Tencent Cloud Lighthouse instance:
+
+| Item | Configuration |
+| --- | --- |
+| CPU | 2 cores |
+| Memory | 2 GB |
+| Operating system | Ubuntu 22.04 |
+| Editor | vim |
+
+#### 4.4 Test Setup
+
+![Experiment setup](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u4.png)
+
+The experiment has three separate programs: the server, client C1, and client C2.
+
+Both client programs ran in the virtual machine, in separate terminal windows:
+
+![Two client terminals](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u55.png)
+
+The server ran on the cloud instance in a separate terminal.
+
+Because both clients ran in the same virtual machine, this setup demonstrates the program exchange in that network environment. It does not establish that the same code works between two independent networks or with NAT4.
+
+#### 4.5 Starting the Server
+
+After compiling the server, I ran it with `sudo`:
+
+![Server startup](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u6.png)
+
+The program printed that it was listening on port 80. This port was chosen for the experiment. The cloud firewall also needed to allow **UDP port 80**.
+
+The output showed that socket creation and binding had succeeded. The server then waited for the two clients to register.
+
+#### 4.6 Registering the Clients
+
+I started C1 first:
+
+![C1 receives the server acknowledgement](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u77.png)
+
+C1 received the server's acknowledgement. The server terminal showed C1's source IP address and port:
+
+![The server records C1's endpoint](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u8.png)
+
+I then started C2:
+
+![C2 registers with the server](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u9.png)
+
+The server also recorded C2's endpoint:
+
+![The server records C2's endpoint](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u10.png)
+
+The two observed ports differed by one. This observation alone does not prove a sequential NAT4 allocation rule: the two clients use different sockets, and the reported environment was full-cone NAT.
+
+The server then sent each client the other client's endpoint:
+
+![Each client receives the other client's endpoint](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u11_.png)
+
+The endpoint values shown in the client terminals matched those recorded by the server.
+
+#### 4.7 Testing Hole Punching
+
+C1 sent its first probe to C2:
+
+![C1 sends a probe](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u12.png)
+
+Here, `cB` is the `sockaddr_in` structure containing C2's endpoint.
+
+The purpose of this packet is to create or update C1's outgoing NAT state. Depending on C2's filtering behavior, C2 may receive the packet immediately or its NAT may drop it.
+
+C1 then waited for a packet from C2:
+
+![C1 waits for C2](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u13.png)
+
+Once it received a packet, C1 printed the message and replied to C2.
+
+C2 waited briefly before sending its probe to C1, then waited for C1's reply:
+
+![C2 sends a probe and waits for a reply](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u14.png)
+
+The test produced the following result:
+
+![Successful packet exchange between the clients](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u15.png)
+
+Both clients successfully exchanged packets. I then tested direct application messages.
+
+#### 4.8 Testing Direct Communication
+
+I entered a message in C1's terminal and pressed Enter:
+
+![C1 sends a message](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u16_.png)
+
+In C2's terminal, I pressed Enter to advance its send/receive loop:
+
+![C2 receives the message](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/u17.png)
+
+C2 displayed the message from C1. This demonstrated direct UDP communication between the two client programs in the tested environment.
+
+### Source Code
+
+The listings below retain the original program logic. Comments and Chinese terminal messages have been translated into English. Refer to Section 3.7 for the known length error and the limitations of the example.
+
+
+#### Server
+
+```c++
+// Server
+// Clients A and B register their endpoints with the server, which exchanges them.
+// A probes B to create NAT state; B then probes A to establish communication.
+#include<bits/stdc++.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
+using namespace std;
+#define ERR_EXIT(message)do{ perror(message);exit(EXIT_FAILURE);}while(0)// Print an error and exit
+#define PORT 80
+#define BUFF_SIZE 100
+
+struct sockaddr_in C[3];// Store the IP addresses and ports of C1 and C2
+char SUCCESS[]="successful";
+
+// Receive a packet and record the endpoint of client C[id]
+void getInfoFromClient(int sock, int id){
+    char revBuff[BUFF_SIZE];
+    socklen_t sock_len=sizeof(C[id]);
+
+    // recvfrom() provides the sender endpoint in C[id]
+    if(recvfrom(sock,revBuff,sizeof(revBuff),0,(struct sockaddr*)&C[id],&sock_len)==-1)ERR_EXIT("recv error");
+    cout<<"recv message From C"<<id<<" ip:"<<inet_ntoa(C[id].sin_addr)<<" port:"<<ntohs(C[id].sin_port)<<endl;
+
+    // Send an acknowledgement
+    sendto(sock,SUCCESS,sizeof(SUCCESS),0,(struct sockaddr*)&C[id],sock_len);
+    return;
+}
+
+// Send each client the other client endpoint
+void sendInfoToClient(int sock){
+    socklen_t sock_len=sizeof(C[1]);
+    char buff[BUFF_SIZE];
+
+    // Treat the structure as a byte buffer
+    sendto(sock,(char *)&C[1],sizeof(buff),0,(struct sockaddr*)&C[2],sock_len);
+    sendto(sock,(char *)&C[2],sizeof(buff),0,(struct sockaddr*)&C[1],sock_len);
+
+}
+int main(){
+    struct sockaddr_in s;
+    int sock;
+
+
+    // Create the server socket
+    if((sock=socket(AF_INET,SOCK_DGRAM,0))==-1)ERR_EXIT("socket error");
+    memset(&s,0,sizeof(s));
+    s.sin_family=AF_INET;
+    s.sin_port=htons(PORT);
+    s.sin_addr.s_addr=INADDR_ANY;
+
+    socklen_t sock_len = sizeof(s);
+
+    cout<<"Listening on port: "<<PORT<<endl;
+    // Bind the socket to the local address and port
+    if(bind(sock,(struct sockaddr*)&s,sock_len)==-1)ERR_EXIT("bind error");
+
+
+    // Register both clients
+    getInfoFromClient(sock,1);
+    getInfoFromClient(sock,2);
+
+    // Send each client the other client endpoint
+    sendInfoToClient(sock);
+
+    close(sock);
+
+    return 0;
+}
+```
+
+---
+
+#### Client C1
+
+```c++
+// Client A
+#include<bits/stdc++.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
+using namespace std;
+#define ERR_EXIT(message)do{ perror(message);exit(EXIT_FAILURE);}while(0)
+#define SERVER_PORT 80
+#define PORT 8887
+#define BUFF_SIZE 100
+
+
+struct sockaddr_in cB;// Client B endpoint
+struct sockaddr_in server;// Server endpoint
+
+// Register with the server and receive the peer endpoint
+void sentInfoToServer(int sock,socklen_t sock_len){
+    char revBuff[BUFF_SIZE];
+    char sendBuff[BUFF_SIZE]="conects server";
+
+    // Send a registration packet; the server observes its source endpoint
+    sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&server,sock_len);
+
+    // Receive the server acknowledgement
+    if(recvfrom(sock,revBuff,sizeof(revBuff),0,(struct sockaddr*)&server,&sock_len)==-1)ERR_EXIT("recv1 error");
+    cout<<"recv message From server:"<<revBuff<<endl;
+
+    // Receive the peer IP address and port from the server
+    if(recvfrom(sock,(char *)&cB,sizeof(cB),0,(struct sockaddr*)&server,&sock_len)==-1)ERR_EXIT("recv error");
+    cout<<"recv cB'info From S: ip:"<<inet_ntoa(cB.sin_addr)<<" port:"<<ntohs(cB.sin_port)<<endl;
+}
+// Exchange packets with client B
+void sentMessageToC(int sock,socklen_t sock_len){
+    char sendBuff[BUFF_SIZE]="hello cB";
+    char recvBuff[BUFF_SIZE];
+
+    // Send a probe to create NAT state for a reply from B; B may drop this first packet.
+    sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cB,sock_len);
+
+   // Wait for a packet from B
+   while(1){
+        // Reply after receiving a packet from B
+        if(recvfrom(sock,recvBuff,sizeof(recvBuff),0,(struct sockaddr*)&cB,&sock_len)!=-1){
+            cout<<"recv cB's message:"<<recvBuff<<endl;
+            sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cB,sizeof(cB));
+            break;
+        }
+   }
+
+   // Hole punching succeeded; exchange application messages
+   while(1){
+        memset(recvBuff,0,sizeof(recvBuff));
+        memset(sendBuff,0,sizeof(sendBuff));
+
+        // Receive a packet from B
+        if(recvfrom(sock,recvBuff,sizeof(recvBuff),0,(struct sockaddr*)&cB,&sock_len)==-1)ERR_EXIT("recv error");
+        cout<<"recv message From cB:"<<recvBuff<<endl;
+
+        // Send a message to B
+        if(fgets(sendBuff,sizeof(sendBuff),stdin)!=NULL)
+            sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cB,sock_len);
+   }
+   close(sock);
+}
+int main(){
+    int sock;
+    if((sock=socket(AF_INET,SOCK_DGRAM,0))==-1)ERR_EXIT("sock error");
+    memset(&server,0,sizeof(server));
+
+    server.sin_family=AF_INET;
+    server.sin_port=htons(SERVER_PORT);
+    server.sin_addr.s_addr=inet_addr("162.14.83.124");
+
+    socklen_t sock_len=sizeof(server);
+
+    sentInfoToServer(sock,sock_len);
+    sentMessageToC(sock,sock_len);
+
+    return 0;
+}
+```
+
+---
+
+#### Client C2
+
+```c++
+// Client B
+#include<bits/stdc++.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
+#include<unistd.h>
+using namespace std;
+#define ERR_EXIT(message)do{ perror(message);exit(EXIT_FAILURE);}while(0)
+#define SERVER_PORT 80
+#define PORT 8886
+#define BUFF_SIZE 100
+
+
+struct sockaddr_in cA;// Client A endpoint
+struct sockaddr_in server;// Server endpoint
+
+// Register with the server and receive the peer endpoint
+void sentInfoToServer(int sock,socklen_t sock_len){
+    char revBuff[BUFF_SIZE];
+    char sendBuff[BUFF_SIZE]="conects server";
+
+    // Send a registration packet; the server observes its source endpoint
+    sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&server,sock_len);
+
+    // Receive the server acknowledgement
+    if(recvfrom(sock,revBuff,sizeof(revBuff),0,(struct sockaddr*)&server,&sock_len)==-1)ERR_EXIT("recv1 error");
+    cout<<"recv message From server:"<<revBuff<<endl;
+
+    // Receive the peer IP address and port from the server
+    if(recvfrom(sock,(char *)&cA,sizeof(cA),0,(struct sockaddr*)&server,&sock_len)==-1)ERR_EXIT("recv error");
+    cout<<"recv cA'info From S: ip:"<<inet_ntoa(cA.sin_addr)<<" port:"<<ntohs(cA.sin_port)<<endl;
+}
+
+// Exchange packets with client A
+void sentMessageToC(int sock, socklen_t sock_len){
+    char sendBuff[BUFF_SIZE]="hello cA";
+    char recvBuff[BUFF_SIZE];
+
+    // A has already sent a probe, so its NAT should allow a packet from B.
+   // Send a probe to A
+   sleep(5);// Wait briefly for A to send its probe
+   while(1){
+        sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cA,sock_len);
+        // A reply confirms that packets can pass in both directions
+        if(recvfrom(sock,recvBuff,sizeof(recvBuff),0,(struct sockaddr*)&cA,&sock_len)!=-1){
+            cout<<"cA is connected"<<endl;
+            break;
+        }
+   }
+
+   // Exchange application messages
+   while(1){
+        memset(recvBuff,0,sizeof(recvBuff));
+        memset(sendBuff,0,sizeof(sendBuff));
+
+        // Send a message to A
+        if(fgets(sendBuff,sizeof(sendBuff),stdin)!=NULL)
+            sendto(sock,sendBuff,sizeof(sendBuff),0,(struct sockaddr*)&cA,sock_len);
+
+        // Receive a packet from A
+        if(recvfrom(sock,recvBuff,sizeof(recvBuff),0,(struct sockaddr*)&cA,&sock_len)==-1)ERR_EXIT("recv error");
+        cout<<"recv message From cA:"<<recvBuff<<endl;
+
+
+   }
+   close(sock);
+}
+int main(){
+    int sock;
+    if((sock=socket(AF_INET,SOCK_DGRAM,0))==-1)ERR_EXIT("sock error");
+    memset(&server,0,sizeof(server));
+
+    server.sin_family=AF_INET;
+    server.sin_port=htons(SERVER_PORT);
+    server.sin_addr.s_addr=inet_addr("162.14.83.124");
+
+    socklen_t sock_len=sizeof(server);
+
+    sentInfoToServer(sock,sock_len);
+    sentMessageToC(sock,sock_len);
+
+    return 0;
+}
+```
+

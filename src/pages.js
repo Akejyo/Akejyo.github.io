@@ -1,3 +1,4 @@
+import { galleryBody } from './gallery-page.js';
 import { PersonaArtwork } from "./persona-art.js";
 import { BrokenDiamond } from "./components.js";
 import { TextileBand, FootprintTrail } from "./folklore.js";
@@ -30,6 +31,7 @@ const routes = [
   ["/records", "RECORDS", "Writing"],
   ["/projects", "EXPEDITIONS", "Projects"],
   ["/archive", "ARCHIVE", "By date"],
+  ["/gallery", "GALLERY", "Drawings & photos"],
   ["/about", "ABOUT", "The person"],
 ];
 function navigation(current) {
@@ -185,3 +187,5 @@ export function voidPage() {
     html: `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Northline &mdash; Void</title><link rel="stylesheet" href="/src/styles.css"><link rel="stylesheet" href="/src/collapse.css"><script src="/src/story-arrival.js"></script><link rel="stylesheet" href="/src/story.css"><script type="module" src="/src/story.js"></script></head><body class="void-page"><div class="environment-memory" aria-hidden="true"></div><main id="main" class="void-main">${SnowAtmosphere()}<h1 class="story-sr-only">Void</h1>${CressonControl()}<p>It was already here<br>before you arrived.</p>${UncertainFootprints()}</main></body></html>`,
   };
 }
+
+export function gallery() { return shell({title:"Gallery", current:"/gallery", body:galleryBody()}); }

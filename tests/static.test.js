@@ -9,7 +9,7 @@ const server=createPreviewServer().listen(0,'127.0.0.1');
 await once(server,'listening');after(()=>new Promise(resolve=>server.close(resolve)));
 const base='http://127.0.0.1:'+server.address().port;
 const posts=await loadPosts();
-const routes=['/','/records','/projects','/archive','/about','/void','/design-system',...posts.map(p=>'/records/'+p.slug),...expeditions.map(p=>'/projects/'+p.slug)];
+const routes=['/','/records','/projects','/archive','/about','/gallery','/void','/design-system',...posts.map(p=>'/records/'+p.slug),...expeditions.map(p=>'/projects/'+p.slug)];
 const pages=new Map();
 test('every static route supports fresh navigation and refresh, plus real custom 404',async()=>{
   for(const route of routes){

@@ -8,6 +8,8 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { galleryBody } from '../src/gallery-page.js';
+import { galleryItems } from '../src/gallery-data.js';
 import rehypeCodeHighlight from '../src/rehype-code-highlight.js';
 
 process.env.PORT='0';
@@ -16,8 +18,23 @@ if(!server.listening)await once(server,'listening');
 const base=`http://127.0.0.1:${server.address().port}`;
 after(()=>new Promise(resolve=>server.close(resolve)));
 const posts=await loadPosts();
-const paths=['/','/records','/projects','/archive','/about','/void','/design-system',...posts.map(p=>'/records/'+p.slug),...expeditions.map(p=>'/projects/'+p.slug)];
+const paths=['/','/records','/projects','/archive','/about','/gallery','/void','/design-system',...posts.map(p=>'/records/'+p.slug),...expeditions.map(p=>'/projects/'+p.slug)];
 const pages=new Map();
+
+test('gallery renders the complete catalog with thumbnail links and escaped captions', () => {
+  const body = galleryBody();
+  assert.equal((body.match(/data-gallery-open /g) || []).length, galleryItems.length);
+  for (const item of galleryItems) {
+    assert.ok(body.includes(`href="${item.src}"`));
+    assert.ok(body.includes(`src="${item.thumbnail}"`));
+    assert.ok(item.width > 0 && item.height > 0);
+  }
+  const fixture = galleryBody([{type:'photo',src:'/assets/forest.svg', title:'A <scene>', alt:'Trees & water', album:'<Forest>'}]);
+  assert.match(fixture,/A &lt;scene&gt;/);
+  assert.match(fixture,/Trees &amp; water/);
+  assert.doesNotMatch(fixture,/<Forest>|<scene>/);
+  assert.match(galleryBody([]),/The drawing collection will appear here/);
+});
 
 test('syntax highlighting supports requested languages and preserves exact copy text', () => {
   const samples = {

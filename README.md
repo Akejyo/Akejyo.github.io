@@ -105,4 +105,6 @@ MDX uses the official [MDX compiler](https://mdxjs.com/packages/mdx/), with [rem
 Imported posts: see [the migration report](docs/POST-MIGRATION.md) for source-to-route mappings, conversions, validation and four missing source diagrams.
 ## GitHub Pages publishing
 
+The visual journal at `/gallery` contains drawings and photographs. See [the gallery guide](docs/GALLERY.md) for importing images, editing captions and organizing photo collections.
+
 This repository is the canonical source for `Akejyo/Akejyo.github.io`. Run `npm run build` to generate the ignored `dist/` artifact, `npm run test:static` to verify it, and `npm run preview` to inspect the production site locally. Every push to `main` runs the checks and deploys through `.github/workflows/deploy.yml`. See [DEPLOYMENT.md](DEPLOYMENT.md) for the one-time GitHub settings and everyday publishing workflow.

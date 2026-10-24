@@ -1,0 +1,465 @@
+[
+  {
+    "type": "drawing",
+    "title": "Drawing 01",
+    "alt": "Drawing 01",
+    "src": "/assets/gallery/drawing-24a9b914820b.webp",
+    "thumbnail": "/assets/gallery/drawing-24a9b914820b-thumb.webp",
+    "width": 830,
+    "height": 1106
+  },
+  {
+    "type": "drawing",
+    "title": "Drawing 02",
+    "alt": "Drawing 02",
+    "src": "/assets/gallery/drawing-33761a265dad.webp",
+    "thumbnail": "/assets/gallery/drawing-33761a265dad-thumb.webp",
+    "width": 2048,
+    "height": 2048
+  },
+  {
+    "type": "drawing",
+    "title": "Drawing 03",
+    "alt": "Drawing 03",
+    "src": "/assets/gallery/drawing-c64f368c086e.webp",
+    "thumbnail": "/assets/gallery/drawing-c64f368c086e-thumb.webp",
+    "width": 1801,
+    "height": 2400
+  },
+  {
+    "type": "drawing",
+    "title": "Drawing 04",
+    "alt": "Drawing 04",
+    "src": "/assets/gallery/drawing-a6ffb1ed11ba.webp",
+    "thumbnail": "/assets/gallery/drawing-a6ffb1ed11ba-thumb.webp",
+    "width": 876,
+    "height": 462
+  },
+  {
+    "type": "drawing",
+    "title": "Drawing 05",
+    "alt": "Drawing 05",
+    "src": "/assets/gallery/drawing-08c9bb79481b.webp",
+    "thumbnail": "/assets/gallery/drawing-08c9bb79481b-thumb.webp",
+    "width": 897,
+    "height": 1065
+  },
+  {
+    "type": "drawing",
+    "title": "Drawing 06",
+    "alt": "Drawing 06",
+    "src": "/assets/gallery/drawing-2f00c788849e.webp",
+    "thumbnail": "/assets/gallery/drawing-2f00c788849e-thumb.webp",
+    "width": 719,
+    "height": 891
+  },
+  {
+    "type": "drawing",
+    "title": "Drawing 07",
+    "alt": "Drawing 07",
+    "src": "/assets/gallery/drawing-1752a010fcd7.webp",
+    "thumbnail": "/assets/gallery/drawing-1752a010fcd7-thumb.webp",
+    "width": 688,
+    "height": 825
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 01",
+    "alt": "Photograph 01",
+    "src": "/assets/gallery/photo-cfc9d7a28452.webp",
+    "thumbnail": "/assets/gallery/photo-cfc9d7a28452-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 02",
+    "alt": "Photograph 02",
+    "src": "/assets/gallery/photo-fdbc0cd2413f.webp",
+    "thumbnail": "/assets/gallery/photo-fdbc0cd2413f-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 03",
+    "alt": "Photograph 03",
+    "src": "/assets/gallery/photo-c64f368c086e.webp",
+    "thumbnail": "/assets/gallery/photo-c64f368c086e-thumb.webp",
+    "width": 2132,
+    "height": 1600,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 04",
+    "alt": "Photograph 04",
+    "src": "/assets/gallery/photo-f018792828bc.webp",
+    "thumbnail": "/assets/gallery/photo-f018792828bc-thumb.webp",
+    "width": 1801,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 05",
+    "alt": "Photograph 05",
+    "src": "/assets/gallery/photo-a6ffb1ed11ba.webp",
+    "thumbnail": "/assets/gallery/photo-a6ffb1ed11ba-thumb.webp",
+    "width": 1440,
+    "height": 1920,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 06",
+    "alt": "Photograph 06",
+    "src": "/assets/gallery/photo-02b544ccf3be.webp",
+    "thumbnail": "/assets/gallery/photo-02b544ccf3be-thumb.webp",
+    "width": 1280,
+    "height": 960,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 07",
+    "alt": "Photograph 07",
+    "src": "/assets/gallery/photo-6f29cc355fed.webp",
+    "thumbnail": "/assets/gallery/photo-6f29cc355fed-thumb.webp",
+    "width": 1280,
+    "height": 1706,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 08",
+    "alt": "Photograph 08",
+    "src": "/assets/gallery/photo-d3872ceb21c3.webp",
+    "thumbnail": "/assets/gallery/photo-d3872ceb21c3-thumb.webp",
+    "width": 1994,
+    "height": 1902,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 09",
+    "alt": "Photograph 09",
+    "src": "/assets/gallery/photo-501f9bdfba64.webp",
+    "thumbnail": "/assets/gallery/photo-501f9bdfba64-thumb.webp",
+    "width": 1978,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 10",
+    "alt": "Photograph 10",
+    "src": "/assets/gallery/photo-2e2b3be8d2f2.webp",
+    "thumbnail": "/assets/gallery/photo-2e2b3be8d2f2-thumb.webp",
+    "width": 1799,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 11",
+    "alt": "Photograph 11",
+    "src": "/assets/gallery/photo-bdd40ac67be9.webp",
+    "thumbnail": "/assets/gallery/photo-bdd40ac67be9-thumb.webp",
+    "width": 1799,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 12",
+    "alt": "Photograph 12",
+    "src": "/assets/gallery/photo-3cd4abaf7206.webp",
+    "thumbnail": "/assets/gallery/photo-3cd4abaf7206-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 13",
+    "alt": "Photograph 13",
+    "src": "/assets/gallery/photo-6c35c7b62a7d.webp",
+    "thumbnail": "/assets/gallery/photo-6c35c7b62a7d-thumb.webp",
+    "width": 1801,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 14",
+    "alt": "Photograph 14",
+    "src": "/assets/gallery/photo-4e2b6cc3e7a3.webp",
+    "thumbnail": "/assets/gallery/photo-4e2b6cc3e7a3-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 15",
+    "alt": "Photograph 15",
+    "src": "/assets/gallery/photo-3a949aecca2c.webp",
+    "thumbnail": "/assets/gallery/photo-3a949aecca2c-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 16",
+    "alt": "Photograph 16",
+    "src": "/assets/gallery/photo-e9eb159ccb53.webp",
+    "thumbnail": "/assets/gallery/photo-e9eb159ccb53-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 17",
+    "alt": "Photograph 17",
+    "src": "/assets/gallery/photo-3db15a1e41fd.webp",
+    "thumbnail": "/assets/gallery/photo-3db15a1e41fd-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 18",
+    "alt": "Photograph 18",
+    "src": "/assets/gallery/photo-5ebcf1404cfe.webp",
+    "thumbnail": "/assets/gallery/photo-5ebcf1404cfe-thumb.webp",
+    "width": 1801,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 19",
+    "alt": "Photograph 19",
+    "src": "/assets/gallery/photo-63c95b33f380.webp",
+    "thumbnail": "/assets/gallery/photo-63c95b33f380-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 20",
+    "alt": "Photograph 20",
+    "src": "/assets/gallery/photo-4df2632f5b02.webp",
+    "thumbnail": "/assets/gallery/photo-4df2632f5b02-thumb.webp",
+    "width": 1801,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 21",
+    "alt": "Photograph 21",
+    "src": "/assets/gallery/photo-8b3b38af7cf1.webp",
+    "thumbnail": "/assets/gallery/photo-8b3b38af7cf1-thumb.webp",
+    "width": 1801,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 22",
+    "alt": "Photograph 22",
+    "src": "/assets/gallery/photo-f41eb9af295a.webp",
+    "thumbnail": "/assets/gallery/photo-f41eb9af295a-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 23",
+    "alt": "Photograph 23",
+    "src": "/assets/gallery/photo-fc23e61085c3.webp",
+    "thumbnail": "/assets/gallery/photo-fc23e61085c3-thumb.webp",
+    "width": 1280,
+    "height": 960,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 24",
+    "alt": "Photograph 24",
+    "src": "/assets/gallery/photo-2195685f566a.webp",
+    "thumbnail": "/assets/gallery/photo-2195685f566a-thumb.webp",
+    "width": 1801,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 25",
+    "alt": "Photograph 25",
+    "src": "/assets/gallery/photo-a7fe1b232fb6.webp",
+    "thumbnail": "/assets/gallery/photo-a7fe1b232fb6-thumb.webp",
+    "width": 1045,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 26",
+    "alt": "Photograph 26",
+    "src": "/assets/gallery/photo-af79890229f7.webp",
+    "thumbnail": "/assets/gallery/photo-af79890229f7-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 27",
+    "alt": "Photograph 27",
+    "src": "/assets/gallery/photo-746257cc99ea.webp",
+    "thumbnail": "/assets/gallery/photo-746257cc99ea-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 28",
+    "alt": "Photograph 28",
+    "src": "/assets/gallery/photo-762c2c6fe0e3.webp",
+    "thumbnail": "/assets/gallery/photo-762c2c6fe0e3-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 29",
+    "alt": "Photograph 29",
+    "src": "/assets/gallery/photo-d8e0989416fd.webp",
+    "thumbnail": "/assets/gallery/photo-d8e0989416fd-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 30",
+    "alt": "Photograph 30",
+    "src": "/assets/gallery/photo-71495105e554.webp",
+    "thumbnail": "/assets/gallery/photo-71495105e554-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 31",
+    "alt": "Photograph 31",
+    "src": "/assets/gallery/photo-c28f6e1f4598.webp",
+    "thumbnail": "/assets/gallery/photo-c28f6e1f4598-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 32",
+    "alt": "Photograph 32",
+    "src": "/assets/gallery/photo-b8e8ab9f8547.webp",
+    "thumbnail": "/assets/gallery/photo-b8e8ab9f8547-thumb.webp",
+    "width": 2133,
+    "height": 1600,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 33",
+    "alt": "Photograph 33",
+    "src": "/assets/gallery/photo-651835a42b49.webp",
+    "thumbnail": "/assets/gallery/photo-651835a42b49-thumb.webp",
+    "width": 1800,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 34",
+    "alt": "Photograph 34",
+    "src": "/assets/gallery/photo-50c94a90c432.webp",
+    "thumbnail": "/assets/gallery/photo-50c94a90c432-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 35",
+    "alt": "Photograph 35",
+    "src": "/assets/gallery/photo-04226fee806c.webp",
+    "thumbnail": "/assets/gallery/photo-04226fee806c-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 36",
+    "alt": "Photograph 36",
+    "src": "/assets/gallery/photo-4c72f9df3975.webp",
+    "thumbnail": "/assets/gallery/photo-4c72f9df3975-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 37",
+    "alt": "Photograph 37",
+    "src": "/assets/gallery/photo-4a85aa255fea.webp",
+    "thumbnail": "/assets/gallery/photo-4a85aa255fea-thumb.webp",
+    "width": 2400,
+    "height": 1800,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 38",
+    "alt": "Photograph 38",
+    "src": "/assets/gallery/photo-3257b28c5ae8.webp",
+    "thumbnail": "/assets/gallery/photo-3257b28c5ae8-thumb.webp",
+    "width": 1174,
+    "height": 1227,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 39",
+    "alt": "Photograph 39",
+    "src": "/assets/gallery/photo-509c132197d9.webp",
+    "thumbnail": "/assets/gallery/photo-509c132197d9-thumb.webp",
+    "width": 1800,
+    "height": 2400,
+    "album": "Collected photographs"
+  },
+  {
+    "type": "photo",
+    "title": "Photograph 40",
+    "alt": "Photograph 40",
+    "src": "/assets/gallery/photo-6a3717310efa.webp",
+    "thumbnail": "/assets/gallery/photo-6a3717310efa-thumb.webp",
+    "width": 2178,
+    "height": 2400,
+    "album": "Collected photographs"
+  }
+]

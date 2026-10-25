@@ -104,3 +104,25 @@ html:not(.has-js) .copy-article { display:none; }
 .prose pre .hljs-deletion { color:#923e44; }
 .prose pre .hljs-emphasis { font-style:italic; }
 .prose pre .hljs-strong { font-weight:700; }
+/* Home-only particle composition; retain the landscape and the Explore link. */
+.blog .field-hero:has(.particle-hero-content) { padding-top:30px; padding-bottom:44px; }
+.particle-hero-content .home-particles { position:relative; width:min(52%,580px); height:480px; }
+#home-particle-canvas { position:absolute; inset:0; }
+.particle-fallback { position:absolute; width:84%; height:84%; top:8%; left:8%; object-fit:contain; }
+.particle-fallback[hidden] { display:none; }
+.particle-hero-content .button { margin-top:20px; }
+@media(max-width:760px) { .particle-hero-content .home-particles { width:min(100%,480px); height:400px; }.blog .field-hero:has(.particle-hero-content) { min-height:540px; } }
+@media(max-width:440px) { .particle-hero-content .home-particles { height:340px; }.blog .field-hero:has(.particle-hero-content) { min-height:480px; } }
+
+@font-face { font-family:FarNorthRunes; src:url('/assets/fonts/FarNorthRunes-Regular.woff') format('woff'); font-style:normal; font-weight:400; font-display:swap; }
+.particle-hero-content { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 48px; align-items:center; }
+.particle-hero-content .home-particles { width:100%; }
+.home-caption-stack { align-self:start; position:relative; isolation:isolate; box-sizing:border-box; display:grid; align-items:start; min-width:0; padding:32px; margin-top:32px; }
+.home-caption-background { position:absolute; inset:0; z-index:-1; pointer-events:none; background:rgba(247,248,248,.87); border-right:1px solid var(--border); }
+.home-caption { grid-area:1/1; min-width:0; align-self:start; }
+.home-caption[hidden] { display:none; }
+.home-rune-title { font:400 clamp(32px,3.5vw,52px)/1.3 FarNorthRunes,var(--font-serif); overflow-wrap:anywhere; text-align:right; color:var(--text-primary); }
+.home-caption-title { font:12px/1.6 var(--font-serif); text-align:right; color:var(--text-secondary); margin:12px 0 24px; }
+.home-caption-description { font:17px/1.85 var(--font-serif); color:var(--text-primary); border-top:1px solid var(--border); padding-top:24px; }
+.particle-hero-content > .button { grid-column:1; justify-self:start; }
+@media(max-width:760px) { .particle-hero-content { grid-template-columns:1fr; gap:24px; }.particle-hero-content .home-particles { justify-self:center; }.home-caption-stack { padding:24px; }.home-rune-title { font-size:36px; }.home-caption-description { font-size:16px; }.particle-hero-content > .button { margin-top:0; } }

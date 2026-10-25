@@ -36,8 +36,8 @@ export const server = http.createServer(async (req,res)=>{
       if(pathname==='/design-system')file='index.html';
       else if(pathname==='/preview.html')file='preview.html';
       else if(development&&/^\/src\/(qa\.js|qa\.css|qa-arrival\.js)$/.test(pathname))file=pathname.slice(1);
-      else if(/^\/src\/(gallery\.css|gallery\.js|styles\.css|components\.js|main\.js|blog\.css|blog\.js|folklore\.css|collapse\.css|collapse\.js|collapse-art\.js|story\.css|story\.js|story-arrival\.js|effect-events\.js|environment\.js)$/.test(pathname))file=pathname.slice(1);
-      else if(/^\/assets\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.(svg|png|jpe?g|webp|avif|gif)$/.test(pathname))file=pathname.slice(1);
+      else if(/^\/src\/(home-particles\.js|particle-engine\.js|particle-motion\.js|particle-sampling\.js|gallery\.css|gallery\.js|styles\.css|components\.js|main\.js|blog\.css|blog\.js|folklore\.css|collapse\.css|collapse\.js|collapse-art\.js|story\.css|story\.js|story-arrival\.js|effect-events\.js|environment\.js)$/.test(pathname))file=pathname.slice(1);
+      else if(/^\/assets\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.(svg|png|jpe?g|webp|avif|gif|woff2?)$/.test(pathname))file=pathname.slice(1);
       else if(/^\/vendor\/katex\/(katex\.min\.css|fonts\/[a-zA-Z0-9_-]+\.(woff2|woff|ttf))$/.test(pathname))file=pathname.replace('/vendor/katex/','node_modules/katex/dist/');
       if(file){try{let body=await readFile(path.join(root,file));if(development&&file.endsWith('.html'))body=injectQA(body.toString());res.writeHead(200,{'Content-Type':types[path.extname(file)]||'application/octet-stream'});res.end(req.method==='HEAD'?undefined:body);return;}catch(error){if(error.code!=='ENOENT')throw error;}}
       result=notFound();

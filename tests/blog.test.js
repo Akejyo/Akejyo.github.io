@@ -21,6 +21,29 @@ const posts=await loadPosts();
 const paths=['/','/records','/projects','/archive','/about','/gallery','/void','/design-system',...posts.map(p=>'/records/'+p.slug),...expeditions.map(p=>'/projects/'+p.slug)];
 const pages=new Map();
 
+test('home particle assets are served and the avatar icon and Explore link remain available', async()=>{
+  const html = await (await fetch(base+'/')).text();
+  assert.match(html,/id="home-particle-canvas"/);
+  for (const title of ['Boundless Gift','Horizon Invitation','Dimensional Fluid','Old Fan','Golden Chalice','Hot Water Kettle']) assert.ok(html.includes(title));
+  assert.equal((html.match(/data-home-caption=/g)||[]).length,6);
+  assert.equal((html.match(/data-home-caption="[^"]+" hidden/g)||[]).length,5);
+  const font = await fetch(base+'/assets/fonts/FarNorthRunes-Regular.woff');
+  assert.equal(font.status,200);
+  assert.match(font.headers.get('content-type'),/font\/woff/);
+  assert.match(html,/<img class="particle-fallback"[^>]* hidden>/);
+  assert.match(html,/<noscript><img class="particle-fallback"[^>]*><\/noscript>/);
+  assert.match(html,/href="\/records">ENTER \/ EXPLORE/);
+  assert.match(html,/href="\/assets\/avatar-icon.png"/);
+  assert.doesNotMatch(html,/Between what exists/);
+  for (const name of ['home','records','expeditions','archive','gallery','about']) {
+    assert.equal((await fetch(base+`/assets/particles/${name}.png`)).status,200);
+  }
+  for (const name of ['home-particles','particle-engine','particle-motion','particle-sampling']) {
+    assert.equal((await fetch(base+`/src/${name}.js`)).status,200);
+  }
+  assert.doesNotMatch(await (await fetch(base+'/records')).text(),/src="\/src\/home-particles.js"/);
+});
+
 test('gallery renders the complete catalog with thumbnail links and escaped captions', () => {
   const body = galleryBody();
   assert.equal((body.match(/data-gallery-open /g) || []).length, galleryItems.length);

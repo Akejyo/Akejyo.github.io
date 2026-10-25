@@ -24,13 +24,13 @@ await write('404/index.html',notFound().html);
 await write('design-system/index.html',await readFile(path.join(root,'index.html')));
 await write('preview.html',await readFile(path.join(root,'preview.html')));
 // Explicit client allowlist: no QA, server, MDX sources, documentation or credentials.
-const clients=['gallery.css','gallery.js','styles.css','components.js','main.js','blog.css','blog.js','folklore.css','collapse.css','collapse.js','collapse-art.js','story.css','story.js','story-arrival.js','effect-events.js','environment.js'];
+const clients=['home-particles.js','particle-engine.js','particle-motion.js','particle-sampling.js','gallery.css','gallery.js','styles.css','components.js','main.js','blog.css','blog.js','folklore.css','collapse.css','collapse.js','collapse-art.js','story.css','story.js','story-arrival.js','effect-events.js','environment.js'];
 for(const file of clients)await write('src/'+file,await readFile(path.join(root,'src',file)));
 async function copyImages(dir,relative='assets'){
   for(const entry of await readdir(dir,{withFileTypes:true})){
     if(entry.isSymbolicLink())throw Error('Linked asset is not supported: '+entry.name);
     if(entry.isDirectory())await copyImages(path.join(dir,entry.name),relative+'/'+entry.name);
-    else if(/\.(svg|png|jpe?g|webp|avif|gif)$/i.test(entry.name))await write(relative+'/'+entry.name,await readFile(path.join(dir,entry.name)));
+    else if(/\.(svg|png|jpe?g|webp|avif|gif|woff2?)$/i.test(entry.name))await write(relative+'/'+entry.name,await readFile(path.join(dir,entry.name)));
   }
 }
 await copyImages(path.join(root,'assets'));

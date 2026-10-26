@@ -25,7 +25,7 @@ importedFrom: CTF/2023-10-28-yulin.md
 
 ### 👋 签到
 
-![image-20230914160105073](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230914160105073.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230914160105073.png" alt="image-20230914160105073" style="zoom:50%;" />
 
 塞尔达语，可以直接搜到翻译器，翻译后得到
 
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
 修改后：
 
-![](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230914205340165.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230914205340165.png" style="zoom:25%;" />
 
 得到第一段 flag: `YulinSec{W1dTh_H4igHt_EasY}`
 
@@ -231,7 +231,7 @@ if __name__ == '__main__':
 
 得到下面的图：
 
-![image-20230918233021166](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230918233021166.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20230918233021166.png" alt="image-20230918233021166" style="zoom:25%;" />
 
 Piet 语言解得到 flag
 
@@ -379,11 +379,11 @@ for your serious consideration of our offer .
 
 直接 binwalk 一波，分离的众多.rar 里有一个.zip，解压需要密码
 
-![image-20231002153123700](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002153123700.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002153123700.png" alt="image-20231002153123700" style="zoom:50%;" />
 
 010 打开看到有一堆 .rar，最后还有一个 65.rar（按理来说是 0 到 64），暂时不知何意
 
-![image-20231002153445593](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002153445593.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002153445593.png" alt="image-20231002153445593" style="zoom:50%;" />
 
 看看是否是伪加密
 
@@ -399,11 +399,11 @@ for your serious consideration of our offer .
 
 6 位阿拉伯数字没有爆破出来
 
-![image-20231002160846360](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002160846360.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002160846360.png" alt="image-20231002160846360" style="zoom:50%;" />
 
 字典攻击出来了
 
-![image-20231002161241845](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002161241845.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002161241845.png" alt="image-20231002161241845" style="zoom:50%;" />
 
 密码就是 `password`
 
@@ -417,7 +417,7 @@ for your serious consideration of our offer .
 
 这个密码不知道，可能在 Attack_it.zip 里，去看看
 
-![image-20231002162002325](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002162002325.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002162002325.png" alt="image-20231002162002325" style="zoom:50%;" />
 
 ```
 mad坏比怎么把Flag藏的这么隐秘，你一边想着一边将长又粗的鳗鱼卷插进出题人的嘴里，随着一阵「唔唔唔呜呜嗯嗯……」的呜咽声过去，之后再也没了动静。
@@ -427,7 +427,7 @@ mad坏比怎么把Flag藏的这么隐秘，你一边想着一边将长又粗的�
 
 既然说密钥是 `secret`，就看看是不是：
 
-![image-20231002162158762](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002162158762.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002162158762.png" alt="image-20231002162158762" style="zoom:50%;" />
 
 `Wow You Get The True Secret!`
 
@@ -437,15 +437,15 @@ mad坏比怎么把Flag藏的这么隐秘，你一边想着一边将长又粗的�
 
 用 7z 打开 secret.zip 和 Attack_it!.zip，可以发现 secret.txt 的 CRC 是一样的：
 
-![image-20231002164545442](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002164545442.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002164545442.png" alt="image-20231002164545442" style="zoom:50%;" />
 
 试试明文攻击
 
-![image-20231002165435591](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002165435591.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002165435591.png" alt="image-20231002165435591" style="zoom:50%;" />
 
 突然发现两个加密方式不一样，也许不对（
 
-![image-20231002170059664](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002170059664.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002170059664.png" alt="image-20231002170059664" style="zoom:50%;" />
 
 弄个好压试试，也不对（
 
@@ -455,13 +455,13 @@ bandzip 3 倍极限压缩：
 
 好像对了，开始攻击！
 
-![image-20231002185530906](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002185530906.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002185530906.png" alt="image-20231002185530906" style="zoom:50%;" />
 
 麻了
 
 后面我又在网上看到这个图：
 
-![image-20231002224031588](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002224031588.png)
+<img src="https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20231002224031588.png" alt="image-20231002224031588" style="zoom:50%;" />
 
 ```
 一般的话赛题会让你在短时间内跑出来的，但也不会太短，万一被爆破了呢。

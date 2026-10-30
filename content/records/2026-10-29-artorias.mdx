@@ -64,7 +64,7 @@ function Artorius772000_Act07(f9_arg0, f9_arg1, f9_arg2)
 end
 ```
 
-Notice that this act first registers three monitors to SpEffect `5025`, `5026` and `5027`. In phase 1, roaring `[a000_003006]` won't add SpEffect `5025`, which will be added in phase 2 roaring `[a001_003006]`
+Notice that this act first registers three listeners to SpEffect `5025`, `5026` and `5027`. In phase 1, roaring `[a000_003006]` won't add SpEffect `5025`, which will be added in phase 2 roaring `[a001_003006]`
 
 ![image-20261029205756786](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20261029205756786.png)
 
@@ -190,7 +190,7 @@ Normal long combo attack with cooling time works like this (we will talk about `
 So when will the boss do successive attack? Remember `AdjustSpace` function we discussed before? After the end of long combo attack, it may directly execute `AdjustSpace` and if luckily it also executes roaring `3006`, the second long combo attack may appears.
 
 ```css
-Act07 registers monitors to SpEffect 5025-5027
+Act07 registers listeners to SpEffect 5025-5027
 
 	→ roaring 3006
 	→ SpEffect 5025 triggers first attack 3030
@@ -199,27 +199,13 @@ Act07 registers monitors to SpEffect 5025-5027
 		↓
 		Directly execute AdjustSpace()
 		↓ Roaring 3006
-		If the monitors are still alive
+		If the listeners are still alive
 		↓
 		SpEffect 5025 triggers first attack 3030
 		...
 ```
 
-Act07 registers monitors to SpEffect `5025-5027`
-
-​	→ roaring `3006`
-​	→ SpEffect `5025` triggers first attack `3030`
-​	→ SpEffect `5026` triggers second attack `3031`
-​	→ SpEffect `5027` triggers final attack `3032`
-​		↓
-​		Directly execute `AdjustSpace`
-​		↓ Roaring `3006`
-​		If the monitors are still alive
-​		↓
-​		SpEffect `5025` triggers first attack `3030`
-​		...
-
-In general, the reason why successive long combo attack happens is that the monitors are not cleared. So if the `AdjustSpace` triggers roaring, the remaining monitors will keep triggering attack. This path does not need a cooling time.
+In general, the reason why successive long combo attack happens is that the listeners are not cleared. So if the `AdjustSpace` triggers roaring, the remaining listeners will keep triggering attack. This path does not need a cooling time.
 
 ## Aura Burst
 

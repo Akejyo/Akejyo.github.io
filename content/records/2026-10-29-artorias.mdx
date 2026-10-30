@@ -90,6 +90,7 @@ end
 ```
 
 It first detects if currently happens `INTERUPT_ActivateSpecialEffect` and see if it's SpEffect `5025`. And it also uses `IsInsideTargetCustom` to see if there is enough space for the subsequent attack.
+
 After all those detections, it registers `3030`, which is the first attack of that long combo attack.
 
 ![longComboAttack_1](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/longComboAttack_1.gif)
@@ -126,7 +127,7 @@ end
 
 ## `AdjustSpace` function
 
-There are a lot more to say about this function. It not only can add roaring into the queue, most of time it controls distance adjustment and dodge.
+There is a lot more to say about this function. It not only can add roaring into the queue, most of time it controls distance adjustment and dodge.
 
 ![sidewayMove](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/sidewayMove.gif)
 
@@ -178,27 +179,45 @@ I once encountered a situation where the boss used long combo attack **3 times**
 
 Normal long combo attack with cooling time works like this (we will talk about `3016` later, it's about aura burst):
 
-* `3016` add SpEffect `60781`, open the entrance of long combo attack
-  	→ Act07 roaring → SpEffect `5025` → First attack `3030` in combo attack
-  	→ `3030` add SpEffect `60780`
-  	→ `60780` lasts ***40s***
-  	→ After lifespan ends, `60781` is generated and the entrance reopens
+```css
+3016 add SpEffect 60781, open the entrance of long combo attack
+	→ Act07 roaring → SpEffect 5025 → First attack 3030 of combo attack
+	→ 3030 add SpEffect 60780
+	→ 60780 lasts 40s
+	→ After lifespan ends, 60781 is generated and the entrance reopens
+```
 
 So when will the boss do successive attack? Remember `AdjustSpace` function we discussed before? After the end of long combo attack, it may directly execute `AdjustSpace` and if luckily it also executes roaring `3006`, the second long combo attack may appears.
 
-* Act07 registers monitors to SpEffect `5025-5027`
+```css
+Act07 registers monitors to SpEffect 5025-5027
 
-  ​	→ roaring `3006`
-  ​	→ SpEffect `5025` triggers first attack `3030`
-  ​	→ SpEffect `5026` triggers second attack `3031`
-  ​	→ SpEffect `5027` triggers final attack `3032`
-  ​		↓
-  ​		Directly execute `AdjustSpace`
-  ​		↓ Roaring `3006`
-  ​		If the monitors are still alive
-  ​		↓
-  ​		SpEffect `5025` triggers first attack `3030`
-  ​		...
+	→ roaring 3006
+	→ SpEffect 5025 triggers first attack 3030
+	→ SpEffect 5026 triggers second attack 3031
+	→ SpEffect 5027 triggers final attack 3032
+		↓
+		Directly execute AdjustSpace()
+		↓ Roaring 3006
+		If the monitors are still alive
+		↓
+		SpEffect 5025 triggers first attack 3030
+		...
+```
+
+Act07 registers monitors to SpEffect `5025-5027`
+
+​	→ roaring `3006`
+​	→ SpEffect `5025` triggers first attack `3030`
+​	→ SpEffect `5026` triggers second attack `3031`
+​	→ SpEffect `5027` triggers final attack `3032`
+​		↓
+​		Directly execute `AdjustSpace`
+​		↓ Roaring `3006`
+​		If the monitors are still alive
+​		↓
+​		SpEffect `5025` triggers first attack `3030`
+​		...
 
 In general, the reason why successive long combo attack happens is that the monitors are not cleared. So if the `AdjustSpace` triggers roaring, the remaining monitors will keep triggering attack. This path does not need a cooling time.
 

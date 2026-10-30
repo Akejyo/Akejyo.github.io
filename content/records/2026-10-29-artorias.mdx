@@ -1,0 +1,218 @@
+---
+title: "[ELDENRING:NIGHTREIGN] Brief Analysis of AI Logic in Knight Artorias"
+date: "2026-10-29"
+image:
+  path: /assets/articles/QQ20261030-012934.png
+category: Re
+description: Reverse data file of ELDENRING:NIGHTREIGN. Learn AI logic and code structure by analyzing AI logic of Knight Artorias
+number: "028"
+selected: true
+author: Akejyo
+---
+
+
+
+I don't want to start this blog with some boring function analysis. Because the whole script is decompiled from `.lua` bytecode, it's hard to figure out those meaningless names. So I want to start with some real cases, whether they are interesting or annoying. And we will study the code and AI logic by analyze these cases with questions.
+
+## Insidious Backstep Spinning and Water Splash
+
+If you've fought this boss many times, you must be quite familiar with this attack:
+
+![insidiousBackStepSpinning](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/insidiousBackStepSpinning.gif)
+
+Very cool, but very dangerous. This attack only appears when target player is close to the boss with specific angle. Water splash is similar to this one.
+
+Act10 is backstep spinning and Act11 is water splash. They use the same set of close-range judgements, in the following order:
+
+```lua
+-- Excluding other branches
+if d > 3 then
+    -- use other Act
+elseif Target within 120° ahead then
+    -- Standard melee attack pool
+elseif Target within 120° to the left then
+    -- Allow Act10 and Act11
+else
+    -- Only allow Act10
+end
+```
+
+![image-20261030010723702](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20261030010723702.png)
+
+## Roaring and Long Combo Attack
+
+Roaring is Act07 with animation ID `3006`. Boss can roar in both phase 1 and phase 2, but he won't do that long combo attack in phase 1. **So what controls that?**
+
+![roaring](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/roaring.gif)
+
+Let's look in Act07 code:
+
+```lua
+function Artorius772000_Act07(f9_arg0, f9_arg1, f9_arg2)
+    -- Some local variables
+    f9_arg0:AddObserveSpecialEffectAttribute(TARGET_SELF, 5025)
+    f9_arg0:AddObserveSpecialEffectAttribute(TARGET_SELF, 5026)
+    f9_arg0:AddObserveSpecialEffectAttribute(TARGET_SELF, 5027)
+    if f9_arg0:HasSpecialEffectId(TARGET_SELF, 5401) == true then
+        f9_arg1:AddSubGoal(GOAL_COMMON_ComboTunable_SuccessAngle180, 15, f9_local8, TARGET_ENE_0, 999, f9_local10, f9_local11, 0, 0)
+        GetWellSpace_Odds = 0
+    else
+        f9_arg1:AddSubGoal(GOAL_COMMON_ComboTunable_SuccessAngle180, 15, f9_local8, TARGET_ENE_0, f9_local9, f9_local10, f9_local11, 0, 0)
+        GetWellSpace_Odds = 0
+    end
+    return GetWellSpace_Odds
+end
+```
+
+Notice that this act first registers three monitors to SpEffect `5025`, `5026` and `5027`. In phase 1, roaring `[a000_003006]` won't add SpEffect `5025`, which will be added in phase 2 roaring `[a001_003006]`
+
+![image-20261029205756786](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20261029205756786.png)
+
+After adding SpEffect `5025`, it might be handled in function `Goal.Interrupt`:
+
+```lua
+Goal.Interrupt = function (f27_arg0, f27_arg1, f27_arg2)
+    -- some other interrupt
+	if f27_arg1:IsInterupt(INTERUPT_ActivateSpecialEffect)
+        and f27_arg1:GetSpecialEffectActivateInterruptId(5025)
+        and f27_arg1:IsInsideTargetCustom(
+            TARGET_SELF, TARGET_ENE_0,
+            AI_DIR_TYPE_F, 360, 180, 40
+        ) 
+    then
+        f27_arg2:AddSubGoal(
+            GOAL_COMMON_ComboRepeat_SuccessAngle180,
+            15, 3030, TARGET_ENE_0, 999, f27_local5, f27_local6, 0, 0
+        )
+        return true
+    end
+end
+```
+
+It first detects if currently happens `INTERUPT_ActivateSpecialEffect` and see if it's SpEffect `5025`. And it also uses `IsInsideTargetCustom` to see if there is enough space for the subsequent attack.
+After all those detections, it registers `3030`, which is the first attack of that long combo attack.
+
+![longComboAttack_1](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/longComboAttack_1.gif)
+
+And this animation will add SpEffect `5026`, which controls for the subsequent attacks.
+
+![image-20261029212148466](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20261029212148466.png)
+
+Actually this long combo attack only has three attack animation. So we have three SpEffects for each of them.
+
+## Roaring Does Not Guarantee Long Combo Attack
+
+Some times you may notice that boss won't directly start long combo attack after roaring (phase 2). For example, the following gif shows a situation that boss roars twice then starts a long combo attack.
+
+![continuoustRoaring](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/continuoustRoaring.gif)
+
+Actually, Act07 is not the only function that can schedule roaring `3006`. Roaring can also be arranged in `AdjustSpace` function. For example, when distance between boss and target player is 3-4 and the random number is greater than 90, it will add `3006` to the subGoal.
+
+```lua
+function Artorius772000_ActAfter_AdjustSpace(f24_arg0, f24_arg1, f24_arg2)
+    local f24_local0 = f24_arg0:GetDist(TARGET_ENE_0)
+    local f24_local1 = f24_arg0:GetRandam_Int(1, 100)
+    if f24_local0 < 2 then
+        -- Many conditional branches
+    elseif f24_local0 < 5 then
+        if f24_local1 <= 65 then
+		-- Many conditional branches
+        else
+            f24_arg1:AddSubGoal(GOAL_COMMON_ComboTunable_SuccessAngle180, 15, 3006, TARGET_ENE_0, Dist_None, 0, 0, 0, 0)
+        end
+        -- Many conditional branches
+end
+```
+
+## `AdjustSpace` function
+
+There are a lot more to say about this function. It not only can add roaring into the queue, most of time it controls distance adjustment and dodge.
+
+![sidewayMove](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/sidewayMove.gif)
+
+After entering the function, it first get distance `d` and draw a random integer from 1 to 100:
+
+| Distance `d`  | Dodge | Sideway Move | Leave Target       | Roaring `3006` |
+| ------------- | ----- | ------------ | ------------------ | -------------- |
+| `d < 2`       | 75%   | --           | 25%, target `d` 4  | --             |
+| `2 <= d < 5`  | 65%   | --           | 25%, target `d` 8  | 10%            |
+| `5 <= d < 10` | 25%   | 45%          | 10%, target `d` 12 | 20%            |
+| `d >= 10`     | --    | 80%          | --                 | 20%            |
+
+* Dodge: Dodge away from the direction in which the target is located -- front, back, right, or otherwise; actual execution is also influenced by StepSatey's path checking.
+* Sideway Move: Randomly choose left or right, lasting 2-2.5 seconds.
+* Leave Target: Request to leave the target, with a sub-target lifetime of 2.5 seconds.
+* Roaring: Directly arrange `3006`, no need to go through Act07.
+
+Now we have another question: **When will this `AdjustSpace` function be executed?** There are two ways: one is `Goal.Activate` function, the other is `Goal.Interrupt` function.
+
+`Goal.Activate` is a function to control which Act0x can be executed, it also controls `AdjustSpace` function. After tons of conditional branches, each Act0x will have a probability and the probabilities are stored in `f2_local1` list. `f2_local9` is registered `AdjustSpace` function. Both of them will be passed to `Common_Battle_Activate` as parameter.
+
+```lua
+Goal.Activate = function (f2_arg0, f2_arg1, f2_arg2)
+    -- Tons of branches here
+   	f2_local1[45] = REGIST_FUNC(f2_arg1, f2_arg2, Artorius772000_Act45)
+    local f2_local9 = REGIST_FUNC(f2_arg1, f2_arg2, Artorius772000_ActAfter_AdjustSpace)
+    Common_Battle_Activate(f2_arg1, f2_arg2, f2_local0, f2_local1, f2_local9, f2_local2)
+end    
+```
+
+All Act0x functions return a random number `GetWellSpace_Odds`. In the common attack function, after it selects attack and arranges it, it executes `AdjustSpace` directly and add subsequent movement in the queue. `GetWellSpace_Odds` controls the probability of executing `AdjustSpace`. The distribution is as follows: (SpEffect `60751` can be simply considered as phase 2, actually I'm not quite sure about it. We will talk about it later) 
+
+| Act                  | SpEffect `60751` = false    | SpEffect `60751` = true     |
+| -------------------- | --------------------------- | --------------------------- |
+| 1, 2, 6, 11, 13      | 70%                         | 50%                         |
+| 3, 4                 | 70%                         | 0%                          |
+| 5                    | 100%                        | 0%                          |
+| 9, 10                | 80%                         | 50%                         |
+| 7, 12, 20, 21, 40-45 | 0%                          | 0%                          |
+| 8                    | Changed within the branches | Changed within the branches |
+
+For `Goal.Interrupt`, `AdjustSpace` will be executed in some specific SpEffect. For example, in Act07, `Goal.Interrupt` checks SpEffect `5027` to arrange the final attack. After adding the attack, it executes `AdjustSpace`. `Goal.Interrupt` will execute `AdjustSpace` in SpEffect `5027`, `5028`, `5029` and `5030`.
+
+## Successive Long Combo Attack
+
+I once encountered a situation where the boss used long combo attack **3 times** successively. Logically speaking, attacks like this should have cooling time. So what results in that?
+
+![successiveCombo](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/successiveCombo.gif)
+
+Normal long combo attack with cooling time works like this (we will talk about `3016` later, it's about aura burst):
+
+* `3016` add SpEffect `60781`, open the entrance of long combo attack
+  	→ Act07 roaring → SpEffect `5025` → First attack `3030` in combo attack
+  	→ `3030` add SpEffect `60780`
+  	→ `60780` lasts ***40s***
+  	→ After lifespan ends, `60781` is generated and the entrance reopens
+
+So when will the boss do successive attack? Remember `AdjustSpace` function we discussed before? After the end of long combo attack, it may directly execute `AdjustSpace` and if luckily it also executes roaring `3006`, the second long combo attack may appears.
+
+* Act07 registers monitors to SpEffect `5025-5027`
+
+  ​	→ roaring `3006`
+  ​	→ SpEffect `5025` triggers first attack `3030`
+  ​	→ SpEffect `5026` triggers second attack `3031`
+  ​	→ SpEffect `5027` triggers final attack `3032`
+  ​		↓
+  ​		Directly execute `AdjustSpace`
+  ​		↓ Roaring `3006`
+  ​		If the monitors are still alive
+  ​		↓
+  ​		SpEffect `5025` triggers first attack `3030`
+  ​		...
+
+In general, the reason why successive long combo attack happens is that the monitors are not cleared. So if the `AdjustSpace` triggers roaring, the remaining monitors will keep triggering attack. This path does not need a cooling time.
+
+## Aura Burst
+
+There are two types of aura burst, one is changing phase 1 to 2 `3016`, the other one is used within phase 2 `3013`.  The cooling time is ***80s***
+
+The first aura burst will also prepare the entrance of long combo attack: Act21→`3016`→SpEffect `60781`. It will also add SpEffect `60751`, which changes the weight in `AdjustSpace`.
+
+## Tools used to unpack the game
+
+* [UXM-Selective-Unpack](https://github.com/Nordgaren/UXM-Selective-Unpack): Unpack original `.bdt` data file into a huge number of `.dcx` resource bundles (actually there will be other file formats but we only focus on files \script, which are `.dcx`).
+* [WitchyBND](https://github.com/ividyon/WitchyBND): Unpack the resource bundles you want. You will get a `.lua` file. But we need another tool to decompile it since it's bytecode.
+* [DSLuaDecompiler](https://github.com/katalash/DSLuaDecompiler): Decompiler for Dark Souls/Bloodborne/Sekiro AI lua files and Havok behavior scripts.
+
+After complete all of these steps, you will get a readable(?) `.lua` script.
+Also, we need [DSAnimStudio](https://github.com/Meowmaritus/DSAnimStudio) to view the animations directly.

@@ -168,15 +168,15 @@ Generate the primes up to $\sqrt n$ beforehand. Each process then obtains the ne
 
 ![image-20240410220642233](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20240410220642233.png)
 
-| 进程数 | 运行时间 |
-| ------ | -------- |
-| 1      | $52.7$ s |
-| 2      | $29.3$ s |
-| 4      | $29.0$ s |
-| 8      | $27.4$ s |
-| 16     | $25.8$ s |
+| Processes | Runtime  |
+| --------- | -------- |
+| 1         | $52.7$ s |
+| 2         | $29.3$ s |
+| 4         | $29.0$ s |
+| 8         | $27.4$ s |
+| 16        | $25.8$ s |
 
- 与 `optimize1.cpp` 对比，差异主要体现在进程数为 $16$ 的时候，说明进程数越多，消除通信带来的加速就越明显。
+The main difference from `optimize1.cpp` appears at 16 processes. This suggests that removing communication becomes more beneficial as the number of processes grows.
 
 ---
 
@@ -204,7 +204,6 @@ I chose the block size as follows:
 
   In code, the resulting rule is `CACHE_SIZE / p / 4 / 4`. I tried several formulas and sizes; this one appeared to work well, so I kept it.
   
-
 - Processing each block is similar to the earlier approach: subdivide the interval again, calculate the block bounds, sieve, and count the remaining primes.
 
   - Number of candidates: `N = (n - 1) / 2`.

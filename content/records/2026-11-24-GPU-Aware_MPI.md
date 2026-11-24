@@ -1,0 +1,52 @@
+---
+title: "[Reading Notes] GPU-Aware MPI on RDMA-Enabled Clusters: Design, Implementation and Evaluation"
+date: "2026-11-23"
+math: true
+image:
+  path: /img/image-20261124004016749.png
+category: PaperNote
+description: 
+number: "029"
+selected: false
+author: Akejyo
+---
+
+
+
+## What problem?
+
+Challenges on developing scalable applications on GPU clusters.
+
+* **Separate Memory Spaces**: Programmers have to use CUDA or OpenCL to access the device memory and move data between CPU and GPU; and use distributed memory programming models, such as MPI, to transfer data on different nodes.
+* **Data Type Support Requirement**: Scientific applications often need to deal with multidimensional and non-contiguous data, which is not naturally supported by MPI on GPU.
+* **Programming Complexity**: Programmers need to manually divide data into chunks for overlapping communication between nodes. Non-contiguous data will also be taken into consideration.
+* **Increased Latency**: MPI runtime uses polling mode to handle message. The step of moving data back into GPU device may get delayed as the MPI library continue handling other incoming message.
+* **Portability**: Without a system level mechanism, programmers have to tune data communication for different hardware configurations.
+
+## Some Background
+
+The environment in this work does not support GPUDirect RDMA. The following sequence is sufficient for data communication: GPU memory → Host memory → Network → Host memory → GPU memory.
+
+Lattice Boltzmann Method (LBM) is the driven application of this work. LBM includes data transfer between neighbors as following figure:
+
+![image-20261124005226725](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20261124005226725.png)
+
+###### Boundary exchange in X dimension of 3D LBM.
+
+## Core Design
+
+1. The MPI runtime will handle allocating memory: each process is allocated to a $vbuf$, which is allocated and freed in $MPI\_Init()$ and $MPI\_Finalize()$.
+
+   Sender copy memory to $vbuf$ → Sender handshakes with receiver to get remote $vbuf$ address using Request to Send (RTS) message → Receiver sends back a Clear To Send (CTS) message including the remote $vbuf$ address...
+
+2. CPU traversing datatype to create a new data structure Input/Output Vector (IOV). Then transform any derived datatype to vectors and send to GPU. GPU kernel will do the data packing and unpacking.
+
+   ![image-20261124020548806](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20261124020548806.png)
+
+   ###### MPI Datatypes defined in the MPI standard and supported by our designs. The ones used in the driven application are highlighted.
+
+3. Asynchronous pipeline: Divide data into blocks called $cuda\_block$. Each block get one $tbuf$, which is allocated in GPU memory, and one CUDA event.![image-20261124020521008](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20261124020521008.png)
+
+   ###### Asynchronous pipeline design in GPU-aware MPI.
+
+![image-20261124020835194](https://raw.githubusercontent.com/Akejyo/imageForBlog/master/img/image-20261124020835194.png)
